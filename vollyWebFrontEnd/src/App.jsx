@@ -1,11 +1,22 @@
-import { useState } from 'react'
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import LoginPage from './pages/LoginPage';
+import DashboardPage from './pages/DashboardPage';
+import DevicePage from './pages/DevicePage';
+import SettingsPage from './pages/SettingsPage';
+import ProfilePage from './pages/ProfilePage';
 import './index.css'
 
 function App() {
   return (
-		<h1 class="text-3xl font-bold underline">
-    	Hello world!
-  	</h1>
+		<BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/" element={<DashboardPage />} />
+        <Route path="/device/:id" element={<DevicePage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/profile/:id" element={<ProfilePage />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
 
