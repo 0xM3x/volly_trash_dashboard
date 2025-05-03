@@ -1,3 +1,12 @@
+import Layout from '../components/Layout';
+
 export default function DashboardPage() {
-  return <div className="p-8 text-xl font-bold">dashboard Sayfası</div>;
+  return (
+    <Layout>
+      <h1 className="text-2xl font-bold">Dashboard Sayfası</h1>
+		  console.log('LocalStorage:', localStorage.getItem('user'));
+    </Layout>
+
+  );
 }
+

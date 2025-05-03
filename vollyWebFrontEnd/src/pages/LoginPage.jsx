@@ -1,27 +1,20 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import logo from '../assets/vollylogo.png';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const navigate = useNavigate();
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    // Basic email format check
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError('Lütfen geçerli bir e-posta adresi girin.');
-      return;
+    if (email === 'admin@admin.com' && password === 'admin') {
+      localStorage.setItem('user', JSON.stringify({ email }));
+      window.location.href = '/';
+    } else {
+      setError('E-posta veya şifre hatalı.');
     }
-
-    // Clear error, simulate login, and redirect
-    setError('');
-    localStorage.setItem('user', JSON.stringify({ email }));
-    navigate('/');
   };
 
   return (
@@ -31,13 +24,16 @@ export default function LoginPage() {
           <img src={logo} alt="Logo" className="w-28 mx-auto" />
         </div>
 
-        <form className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">E-Posta</label>
             <input
               type="email"
-              className="mt-1 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="ornek@mail.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1 w-full px-4 py-2 border rounded-lg"
+              placeholder="example@company.com"
+              required
             />
           </div>
 
@@ -45,15 +41,20 @@ export default function LoginPage() {
             <label className="block text-sm font-medium text-gray-700">Şifre</label>
             <input
               type="password"
-              className="mt-1 w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 w-full px-4 py-2 border rounded-lg"
               placeholder="••••••••"
+              required
             />
           </div>
 
+          {error && (
+            <div className="text-sm text-red-500 font-medium">{error}</div>
+          )}
+
           <div className="text-right text-sm">
-            <a href="#" className="text-blue-500 hover:underline">
-              Şifremi Unuttum?
-            </a>
+            <a href="#" className="text-blue-500 hover:underline">Şifremi Unuttum?</a>
           </div>
 
           <button
