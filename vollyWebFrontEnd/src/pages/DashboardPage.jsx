@@ -3,6 +3,8 @@ import Chart from 'react-apexcharts';
 
 import { FiCpu, FiCheckCircle, FiXCircle, FiAlertTriangle } from 'react-icons/fi';
 
+import { useEffect, useState } from 'react';
+
 export default function DashboardPage() {
   // Sample device counts
   const stats = {
@@ -39,13 +41,32 @@ export default function DashboardPage() {
     },
   ];
 
-	const capacityData = [
-  	{ name: 'Cihaz 1', percent: 78, time: '02.05.2025 - 23:30' },
-  	{ name: 'Cihaz 2', percent: 55, time: '02.05.2025 - 23:29' },
-  	{ name: 'Cihaz 3', percent: 92, time: '02.05.2025 - 23:28' },
-  	{ name: 'Cihaz 4', percent: 36, time: '02.05.2025 - 23:25' },
-	];
+	useEffect(() => {
+	  const interval = setInterval(() => {
+	    setCapacityData(prevData =>
+	      prevData.map((device) => {
+	        const newPercent = Math.max(0, Math.min(100, device.percent + (Math.random() * 10 - 5)));
+	        const now = new Date();
+	        const time = now.toLocaleDateString('tr-TR') + ' - ' + now.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+	
+	        return {
+	          ...device,
+	          percent: Math.round(newPercent),
+	          time,
+	        };
+	      })
+	    );
+	  }, 5000);
+	
+	  return () => clearInterval(interval);
+	}, []);
 
+	const [capacityData, setCapacityData] = useState([
+	  { name: 'Cihaz 1', percent: 78, time: '02.05.2025 - 23:30' },
+	  { name: 'Cihaz 2', percent: 55, time: '02.05.2025 - 23:29' },
+	  { name: 'Cihaz 3', percent: 92, time: '02.05.2025 - 23:28' },
+	  { name: 'Cihaz 4', percent: 36, time: '02.05.2025 - 23:25' },
+	]);
 
   return (
     <Layout>
@@ -119,7 +140,7 @@ export default function DashboardPage() {
 					      <td className="py-4 pr-4 w-64">
 					        <div className="w-full bg-gray-200 rounded-full h-4 mb-1">
 					          <div
-					            className="h-4 rounded-full bg-green-500"
+					            className="h-4 rounded-full bg-green-500 transition-all duration-700 ease-in-out"
 					            style={{ width: `${item.percent}%` }}
 					          ></div>
 					        </div>
