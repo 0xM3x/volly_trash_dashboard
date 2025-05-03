@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { FaTemperatureHigh, FaTint, FaSmog } from 'react-icons/fa';
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
+import LineChartCard from '../components/LineChartCard';
+
 import Layout from '../components/Layout';
 
 
@@ -18,19 +20,56 @@ export default function DeviceDetailPage() {
 	  nem: 60,
 		doluluk: 66,
 	});
-	
+	const [graphData, setGraphData] = useState({
+ 		gaz: [],
+  	sicaklik: [],
+  	nem: [],
+  	doluluk: [],
+	});
+
 	useEffect(() => {
 	  const interval = setInterval(() => {
-	    setSensorData({
-	      gaz: Math.floor(Math.random() * 40) + 60,       // 60–100%
-	      sicaklik: Math.floor(Math.random() * 15) + 20,   // 20–35°C
-	      nem: Math.floor(Math.random() * 40) + 50,        // 50–90%
-				doluluk: Math.floor(Math.random() * 30) + 60       // 60–90%
+	    const newData = {
+	      gaz: Math.floor(Math.random() * 40) + 60,
+	      sicaklik: Math.floor(Math.random() * 15) + 20,
+	      nem: Math.floor(Math.random() * 40) + 50,
+	      doluluk: Math.floor(Math.random() * 30) + 60,
+	    };
+	
+	    const now = new Date().toLocaleTimeString('tr-TR', {
+	      hour: '2-digit',
+	      minute: '2-digit',
+	      second: '2-digit',
 	    });
-	  }, 1000);
+	
+	    // ✅ update sensor values
+	    setSensorData(newData);
+	
+	    // ✅ update chart data
+	    setGraphData((prevData) => ({
+	      gaz: [...prevData.gaz.slice(-9), { time: now, value: newData.gaz }],
+	      sicaklik: [...prevData.sicaklik.slice(-9), { time: now, value: newData.sicaklik }],
+	      nem: [...prevData.nem.slice(-9), { time: now, value: newData.nem }],
+	      doluluk: [...prevData.doluluk.slice(-9), { time: now, value: newData.doluluk }],
+	    }));
+	  }, 5000);
 	
 	  return () => clearInterval(interval);
 	}, []);
+
+	
+//	useEffect(() => {
+//	  const interval = setInterval(() => {
+//	    setSensorData({
+//	      gaz: Math.floor(Math.random() * 40) + 60,       // 60–100%
+//	      sicaklik: Math.floor(Math.random() * 15) + 20,   // 20–35°C
+//	      nem: Math.floor(Math.random() * 40) + 50,        // 50–90%
+//				doluluk: Math.floor(Math.random() * 30) + 60       // 60–90%
+//	    });
+//	  }, 1000);
+//	
+//	  return () => clearInterval(interval);
+//	}, []);
 
   return (
 		<Layout>
@@ -96,12 +135,12 @@ export default function DeviceDetailPage() {
 		    </div>
 		
 		    {/* Bottom Row: 2x2 Graph Grid */}
-		    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-		      <div className="bg-white rounded-xl shadow p-4">Gaz Grafiği</div>
-		      <div className="bg-white rounded-xl shadow p-4">Sıcaklık Grafiği</div>
-		      <div className="bg-white rounded-xl shadow p-4">Nem Grafiği</div>
-		      <div className="bg-white rounded-xl shadow p-4">Doluluk Grafiği</div>
-		    </div>
+				<div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+				  <LineChartCard title="Gaz Grafiği" data={graphData.gaz} color="#16a34a" />
+				  <LineChartCard title="Sıcaklık Grafiği" data={graphData.sicaklik} color="#dc2626" />
+		  		<LineChartCard title="Nem Grafiği" data={graphData.nem} color="#2563eb" />
+		  		<LineChartCard title="Doluluk Grafiği" data={graphData.doluluk} color="#9333ea" />
+				</div>
 		  </div>
 		</Layout>
   );
