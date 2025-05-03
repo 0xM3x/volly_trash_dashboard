@@ -1,6 +1,8 @@
 import { useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { FaTemperatureHigh, FaTint, FaSmog } from 'react-icons/fa';
+import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
+import 'react-circular-progressbar/dist/styles.css';
 import Layout from '../components/Layout';
 
 
@@ -14,6 +16,7 @@ export default function DeviceDetailPage() {
 	  gaz: 72,
 	  sicaklik: 31,
 	  nem: 60,
+		doluluk: 66,
 	});
 	
 	useEffect(() => {
@@ -22,8 +25,9 @@ export default function DeviceDetailPage() {
 	      gaz: Math.floor(Math.random() * 40) + 60,       // 60–100%
 	      sicaklik: Math.floor(Math.random() * 15) + 20,   // 20–35°C
 	      nem: Math.floor(Math.random() * 40) + 50,        // 50–90%
+				doluluk: Math.floor(Math.random() * 30) + 60       // 60–90%
 	    });
-	  }, 5000);
+	  }, 1000);
 	
 	  return () => clearInterval(interval);
 	}, []);
@@ -49,10 +53,23 @@ export default function DeviceDetailPage() {
 		    {/* Middle Row: Capacity (50%) + Sensor Cards (50%) */}
 		    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 		      {/* Doluluk Oranı */}
-		      <div className="bg-white rounded-xl shadow p-4 text-center flex items-center justify-center min-h-[200px]">
-		        Doluluk Oranı (Arc ya da Bar)
-		      </div>
-		
+						<div className="bg-white rounded-xl shadow p-6 flex flex-col items-center justify-center text-center">
+					  <div className="w-40 h-40">
+					    <CircularProgressbar
+					      value={sensorData.doluluk}
+					      text={`${sensorData.doluluk}%`}
+					      styles={buildStyles({
+					        textColor: '#1e3a8a',
+					        pathColor: '#3b82f6',
+					        trailColor: '#e5e7eb',
+					        textSize: '16px',
+					        strokeLinecap: 'round',
+					      })}
+					    />
+					  </div>
+					  <div className="mt-4 text-sm font-medium text-gray-600">Doluluk Oranı</div>
+					</div>
+	
 		      {/* Sensors Vertically */}
 		      <div className="flex flex-col gap-4">
 						{/* Gaz */}
@@ -75,7 +92,6 @@ export default function DeviceDetailPage() {
 						  <div className="text-sm font-medium">Nem</div>
 						  <div className="text-2xl font-bold">{sensorData.nem}%</div>
 						</div>
-						
 		      </div>
 		    </div>
 		
