@@ -39,6 +39,14 @@ export default function DashboardPage() {
     },
   ];
 
+	const capacityData = [
+  	{ name: 'Cihaz 1', percent: 78, time: '02.05.2025 - 23:30' },
+  	{ name: 'Cihaz 2', percent: 55, time: '02.05.2025 - 23:29' },
+  	{ name: 'Cihaz 3', percent: 92, time: '02.05.2025 - 23:28' },
+  	{ name: 'Cihaz 4', percent: 36, time: '02.05.2025 - 23:25' },
+	];
+
+
   return (
     <Layout>
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -86,7 +94,45 @@ export default function DashboardPage() {
   	      </div>
   	    </div>
   	  </div>
-    </Layout>
+
+ 			{/* Capacity Table */}
+		 <div className="mt-10 bg-white rounded-xl shadow p-6">
+		  <h2 className="text-lg font-semibold mb-4">Cihaz Doluluk Durumu</h2>
+		  <div className="overflow-x-auto">
+		    <table className="min-w-full text-sm">
+		      <thead>
+		        <tr className="text-gray-500 uppercase text-xs tracking-wider text-left">
+		          <th className="pb-2">Cihaz Adı</th>
+		          <th className="pb-2">Doluluk</th>
+		          <th className="pb-2 text-right">Zaman</th>
+		        </tr>
+		      </thead>
+					<tbody>
+					  {capacityData.map((item, index) => (
+					    <tr
+					      key={index}
+					      className={`${
+					        index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
+					      } hover:bg-blue-50 transition rounded-md`}
+					    >
+					      <td className="py-4 pr-4 font-medium text-gray-800">{item.name}</td>
+					      <td className="py-4 pr-4 w-64">
+					        <div className="w-full bg-gray-200 rounded-full h-4 mb-1">
+					          <div
+					            className="h-4 rounded-full bg-green-500"
+					            style={{ width: `${item.percent}%` }}
+					          ></div>
+					        </div>
+					        <span className="text-xs text-gray-600">{item.percent}%</span>
+					      </td>
+					      <td className="py-4 text-gray-600 text-right">{item.time}</td>
+					    </tr>
+					  ))}
+					</tbody>
+		    </table>
+		  </div>
+		</div>
+  </Layout>
   );
 }
 
