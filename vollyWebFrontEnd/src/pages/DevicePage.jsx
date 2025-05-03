@@ -1,9 +1,32 @@
 import { useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { FaTemperatureHigh, FaTint, FaSmog } from 'react-icons/fa';
 import Layout from '../components/Layout';
+
+
+
 
 export default function DeviceDetailPage() {
   const { id } = useParams();
   const deviceName = `Cihaz ${id}`;
+
+	const [sensorData, setSensorData] = useState({
+	  gaz: 72,
+	  sicaklik: 31,
+	  nem: 60,
+	});
+	
+	useEffect(() => {
+	  const interval = setInterval(() => {
+	    setSensorData({
+	      gaz: Math.floor(Math.random() * 40) + 60,       // 60–100%
+	      sicaklik: Math.floor(Math.random() * 15) + 20,   // 20–35°C
+	      nem: Math.floor(Math.random() * 40) + 50,        // 50–90%
+	    });
+	  }, 5000);
+	
+	  return () => clearInterval(interval);
+	}, []);
 
   return (
 		<Layout>
@@ -32,9 +55,27 @@ export default function DeviceDetailPage() {
 		
 		      {/* Sensors Vertically */}
 		      <div className="flex flex-col gap-4">
-		        <div className="bg-white rounded-xl shadow p-4 text-center">Gaz</div>
-		        <div className="bg-white rounded-xl shadow p-4 text-center">Sıcaklık</div>
-		        <div className="bg-white rounded-xl shadow p-4 text-center">Nem</div>
+						{/* Gaz */}
+						<div className="bg-green-100 text-green-800 rounded-xl shadow p-4 text-center">
+						  <FaSmog className="text-2xl mx-auto mb-2" />
+						  <div className="text-sm font-medium">Gaz</div>
+						  <div className="text-2xl font-bold">{sensorData.gaz}%</div>
+						</div>
+						
+						{/* Sıcaklık */}
+						<div className="bg-red-100 text-red-800 rounded-xl shadow p-4 text-center">
+						  <FaTemperatureHigh className="text-2xl mx-auto mb-2" />
+						  <div className="text-sm font-medium">Sıcaklık</div>
+						  <div className="text-2xl font-bold">{sensorData.sicaklik}°C</div>
+						</div>
+						
+						{/* Nem */}
+						<div className="bg-blue-100 text-blue-800 rounded-xl shadow p-4 text-center">
+						  <FaTint className="text-2xl mx-auto mb-2" />
+						  <div className="text-sm font-medium">Nem</div>
+						  <div className="text-2xl font-bold">{sensorData.nem}%</div>
+						</div>
+						
 		      </div>
 		    </div>
 		
