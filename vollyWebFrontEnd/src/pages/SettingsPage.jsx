@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Layout from '../components/Layout';
+import toast from 'react-hot-toast';
 
 export default function SettingsPage() {
   const [showModal, setShowModal] = useState(false);
@@ -11,9 +12,9 @@ export default function SettingsPage() {
 
   const handleSaveRole = () => {
     if (!selectedUser || !selectedRole) {
-      setNotification({ type: 'error', message: 'Lütfen kullanıcı ve rol seçin.' });
+      toast.error('Lütfen kullanıcı ve rol seçin.');
     } else {
-      setNotification({ type: 'success', message: 'Yetki başarıyla güncellendi.' });
+      toast.success('Yetki başarıyla güncellendi.');
       setShowModal(false);
       setSelectedUser('');
       setSelectedRole('');
@@ -24,9 +25,9 @@ export default function SettingsPage() {
 
 	const handleCompanyUpdate = () => {
 	  if (!companyName || !companyAddress) {
-	    setNotification({ type: 'error', message: 'Tüm firma bilgilerini doldurun.' });
+	    toast.error('Tüm firma bilgilerini doldurun.');
 	  } else {
-	    setNotification({ type: 'success', message: 'Firma bilgileri başarıyla güncellendi.' });
+	    toast.success('Firma bilgileri başarıyla güncellendi.');
 	  }
 	  setTimeout(() => setNotification(null), 3000);
 	};

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 
 export default function AddClientModal({ isOpen, onClose, onAdd }) {
   const [clientName, setClientName] = useState('');
@@ -24,7 +25,10 @@ export default function AddClientModal({ isOpen, onClose, onAdd }) {
 	};
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!clientName || !clientEmail) return;
+		if (!clientName || !clientEmail) {
+ 			 toast.error('Lütfen geçerli bir firma adı ve e-posta girin');
+  		return;
+		}
 
     onAdd({
       id: Date.now(),
@@ -33,7 +37,7 @@ export default function AddClientModal({ isOpen, onClose, onAdd }) {
       status: 'Aktif',
       users,
     });
-
+		toast.success('Müşteri başarıyla eklendi!');
     // Reset and close
     setClientName('');
     setClientEmail('');
