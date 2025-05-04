@@ -1,18 +1,27 @@
 import Layout from '../components/Layout';
+import AddClientModal from '../components/AddClientModal';
 import { useState } from 'react';
 
 export default function ClientPage() {
-  const [clients] = useState([
+  const [clients, setClients] = useState([
     { id: 1, name: 'ABC Teknoloji', email: 'abc@example.com', status: 'Aktif' },
     { id: 2, name: 'Delta Şirketi', email: 'delta@example.com', status: 'Pasif' },
   ]);
+  const [showModal, setShowModal] = useState(false);
+
+  const handleAddClient = (newClient) => {
+    setClients([...clients, newClient]);
+  };
 
   return (
     <Layout>
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold text-blue-600">Müşteriler</h2>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm">
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
+          >
             Yeni Müşteri Ekle
           </button>
         </div>
@@ -32,6 +41,13 @@ export default function ClientPage() {
             </div>
           ))}
         </div>
+
+        {/* Modal */}
+        <AddClientModal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          onAdd={handleAddClient}
+        />
       </div>
     </Layout>
   );
