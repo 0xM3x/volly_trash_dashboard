@@ -6,6 +6,8 @@ export default function SettingsPage() {
   const [selectedUser, setSelectedUser] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
   const [notification, setNotification] = useState(null);
+	const [companyName, setCompanyName] = useState('Volly Teknoloji A.Ş.');
+	const [companyAddress, setCompanyAddress] = useState('İstanbul, Türkiye');
 
   const handleSaveRole = () => {
     if (!selectedUser || !selectedRole) {
@@ -20,6 +22,15 @@ export default function SettingsPage() {
     setTimeout(() => setNotification(null), 3000);
   };
 
+	const handleCompanyUpdate = () => {
+	  if (!companyName || !companyAddress) {
+	    setNotification({ type: 'error', message: 'Tüm firma bilgilerini doldurun.' });
+	  } else {
+	    setNotification({ type: 'success', message: 'Firma bilgileri başarıyla güncellendi.' });
+	  }
+	  setTimeout(() => setNotification(null), 3000);
+	};
+
   return (
     <Layout>
       <div className="relative space-y-6 p-4">
@@ -33,7 +44,7 @@ export default function SettingsPage() {
           </div>
         )}
 
-        <h2 className="text-2xl font-bold text-blue-900">Ayarlar</h2>
+        <h2 className="text-2xl font-bold text-blue-600">Ayarlar</h2>
 
         {/* Yetki Yönetimi */}
         <div className="bg-white rounded-2xl shadow-md p-6">
@@ -55,24 +66,30 @@ export default function SettingsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">Firma Adı</label>
-              <input
-                type="text"
-                defaultValue="Volly Teknoloji A.Ş."
-                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-              />
+							<input
+							  type="text"
+							  value={companyName}
+							  onChange={(e) => setCompanyName(e.target.value)}
+							  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+							/>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">Adres</label>
-              <input
-                type="text"
-                defaultValue="İstanbul, Türkiye"
-                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-              />
+							<input
+							  type="text"
+							  value={companyAddress}
+							  onChange={(e) => setCompanyAddress(e.target.value)}
+							  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+							/>
             </div>
           </div>
-          <button className="mt-4 bg-blue-600 text-white text-sm px-4 py-2 rounded hover:bg-blue-700">
-            Güncelle
-          </button>
+					<button
+					  onClick={handleCompanyUpdate}
+					  className="mt-4 bg-blue-600 text-white text-sm px-4 py-2 rounded hover:bg-blue-700"
+					>
+					  Güncelle
+					</button>
+
         </div>
 
         {/* Sistem Bilgileri */}
