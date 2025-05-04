@@ -129,6 +129,18 @@ export default function Layout({ children }) {
             >
               <FiUser /> Profil
             </NavLink>
+						<NavLink
+						  to="/clients"
+						  className={({ isActive }) =>
+						    `flex items-center gap-2 py-2 px-6 rounded-lg transition ${
+						      isActive
+						        ? 'bg-blue-100 text-blue-700 font-semibold'
+						        : 'text-gray-700 hover:bg-blue-100'
+						    }`
+						  }
+						>
+						  <FiUser /> Müşteriler
+						</NavLink>
           </nav>
         </div>
 

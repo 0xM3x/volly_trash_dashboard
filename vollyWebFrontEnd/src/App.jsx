@@ -5,6 +5,7 @@ import DashboardPage from './pages/DashboardPage';
 import DevicePage from './pages/DevicePage';
 import SettingsPage from './pages/SettingsPage';
 import ProfilePage from './pages/ProfilePage';
+import ClientPage from './pages/ClientPage';
 
 import ProtectedRoute from './routes/ProtectedRoute';
 
@@ -20,6 +21,7 @@ function App() {
         <Route path="/device/:id" element={<ProtectedRoute><DevicePage /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
         <Route path="/profile/:id" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+        <Route path="/clients" element={<ProtectedRoute><ClientPage /></ProtectedRoute>} />
       </Routes>
     </BrowserRouter>
   )
