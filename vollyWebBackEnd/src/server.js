@@ -2,9 +2,10 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const pool = require('./db');
+const authenticateToken = require('./middleware/authMiddleware');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
-const authenticateToken = require('./middleware/authMiddleware');
+const clientRoutes = require('./routes/clients');
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/clients', authenticateToken, clientRoutes);
 
 app.get('/', (req, res) => {
   res.send('Volly Backend Running');

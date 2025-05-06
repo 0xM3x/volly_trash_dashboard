@@ -1,0 +1,47 @@
+const express = require('express');
+const router = express.Router();
+const authenticateToken = require('../middleware/authMiddleware');
+const pool = require('../db');
+
+// Middleware will be applied in server.js to all /api/clients routes
+
+// POST /api/clients → Create new client
+router.post('/', async (req, res) => {
+  const { name } = req.body;
+
+  if (!name) return res.status(400).json({ message: 'İsim gereklidir' });
+
+  try {
+		// Check for duplicate
+    const existing = await pool.query('SELECT 1 FROM clients WHERE name = $1', [name]);
+    if (existing.rowCount > 0) {
+      return res.status(400).json({ message: 'Bu şirket ismi zaten kayıtlı' });
+    }
+
+    // Get the latest company_id from the DB
+    const result = await pool.query(
+      `SELECT company_id FROM clients ORDER BY id DESC LIMIT 1`
+    );
+
+    let lastHex = result.rows[0]?.company_id || '000';
+    let nextInt = parseInt(lastHex, 16) + 1;
+
+    if (nextInt > 0xFFF) {
+      return res.status(400).json({ message: 'Maksimum şirket limiti aşıldı' });
+    }
+
+    const nextHex = nextInt.toString(16).toUpperCase().padStart(3, '0');
+
+    const insert = await pool.query(
+      `INSERT INTO clients (name, company_id) VALUES ($1, $2) RETURNING *`,
+      [name, nextHex]
+    );
+
+    res.status(201).json(insert.rows[0]);
+  } catch (err) {
+    console.error('Client creation error:', err);
+    res.status(500).json({ message: 'Sunucu hatası' });
+  }
+});
+module.exports = router;
+
