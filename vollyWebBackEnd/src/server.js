@@ -1,7 +1,7 @@
-// src/server.js
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const pool = require('./db');
 
 dotenv.config();
 
@@ -11,6 +11,16 @@ app.use(express.json());
 
 app.get('/', (req, res) => {
   res.send('Volly Backend Running');
+});
+
+app.get('/api/db-test', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT NOW()');
+    res.json({ status: 'connected', time: result.rows[0].now });
+  } catch (err) {
+    console.error('Database connection error:', err);
+    res.status(500).json({ error: 'Database connection failed' });
+  }
 });
 
 const PORT = process.env.PORT || 5000;
