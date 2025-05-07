@@ -6,6 +6,8 @@ const authenticateToken = require('./middleware/authMiddleware');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const clientRoutes = require('./routes/clients');
+const deviceRoutes = require('./routes/devices');
+
 
 dotenv.config();
 
@@ -16,6 +18,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/clients', authenticateToken, clientRoutes);
+app.use('/api/devices', authenticateToken, deviceRoutes);
 
 app.get('/', (req, res) => {
   res.send('Volly Backend Running');
