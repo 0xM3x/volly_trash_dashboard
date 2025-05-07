@@ -59,5 +59,22 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 });
 
+// GET /api/users - List all users (admin only)
+router.get('/', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Erişim reddedildi' });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT id, name, email, role, client_id, created_at FROM users ORDER BY created_at DESC`
+    );
+    res.json({ users: result.rows });
+  } catch (err) {
+    console.error('User list error:', err);
+    res.status(500).json({ message: 'Sunucu hatası' });
+  }
+});
+
 module.exports = router;
 
