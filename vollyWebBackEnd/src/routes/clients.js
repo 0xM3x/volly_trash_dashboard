@@ -43,5 +43,23 @@ router.post('/', async (req, res) => {
     res.status(500).json({ message: 'Sunucu hatası' });
   }
 });
+
+// GET /api/clients - Admin only: list all clients
+router.get('/', async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Erişim reddedildi' });
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT id, name, company_id, created_at FROM clients ORDER BY created_at DESC`
+    );
+    res.json({ clients: result.rows });
+  } catch (err) {
+    console.error('Client list error:', err);
+    res.status(500).json({ message: 'Sunucu hatası' });
+  }
+});
+
 module.exports = router;
 
