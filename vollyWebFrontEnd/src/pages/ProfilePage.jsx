@@ -1,16 +1,27 @@
 import Layout from '../components/Layout';
 import { FaUserCircle } from 'react-icons/fa';
+import axios from '../utils/axiosInstance';
+import { useEffect, useState  } from 'react';
+import { set } from 'date-fns';
 
 export default function ProfilePage() {
-  const user = {
-    name: 'Ali Yılmaz',
-    email: 'ali@firma.com',
-    role: 'Firma',
-    company: 'Volly Teknoloji A.Ş.',
-    lastLogin: '04.05.2025 13:42',
-    createdAt: '02.01.2025',
-  };
+  const [userInfo, setUserInfo] = useState(null);
+  const [error, setError] = useState('');
 
+  useEffect(() => {
+    axios.get('/users/me')
+    .then((res) => setUserInfo(res.data))
+    .catch(() => setError('bilgileri alınamadı.'));
+  }, []);
+
+  if (error) {
+    return <div className='text-red-500 p-4 text-center'>{error}</div>;
+  }
+  
+  if (!userInfo) {
+    return <div className='text-gray-500 p-4 text-center'>Yükleniyor...</div>;
+  }
+  
   return (
     <Layout>
       <div className="p-6 space-y-6">
@@ -26,22 +37,27 @@ export default function ProfilePage() {
           <div className="flex-1 text-sm text-gray-800">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-8">
               <div className="font-medium">Ad Soyad:</div>
-              <div>{user.name}</div>
+              <div>{userInfo.name}</div>
 
               <div className="font-medium">E-Posta:</div>
-              <div>{user.email}</div>
+              <div>{userInfo.email}</div>
 
               <div className="font-medium">Rol:</div>
-              <div>{user.role}</div>
+              <div>{userInfo.role}</div>
 
               <div className="font-medium">Firma:</div>
-              <div>{user.company}</div>
+              {/* <div>{userInfo.client_id}</div> */}
+              <p>{userInfo.client_name || 'Yok'}</p>
 
               <div className="font-medium">Hesap Oluşturulma:</div>
-              <div>{user.createdAt}</div>
-
-              <div className="font-medium">Son Giriş:</div>
-              <div>{user.lastLogin}</div>
+              {/* <div>{userInfo.created_at}</div> */}
+              {new Date(userInfo.created_at).toLocaleString('tr-TR', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
             </div>
 
             <div className="mt-6">

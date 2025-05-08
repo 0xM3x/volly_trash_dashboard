@@ -80,7 +80,7 @@ router.get('/', authenticateToken, async (req, res) => {
 router.get('/me', authenticateToken, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, name, email, role, client_id FROM users WHERE id = $1',
+      'SELECT u.id, u.name, u.email, u.role, u.client_id, u.created_at, c.name AS client_name FROM users u LEFT JOIN clients c ON u.client_id = c.id WHERE u.id = $1',
       [req.user.id]
     );
     if (result.rows.length === 0) {
