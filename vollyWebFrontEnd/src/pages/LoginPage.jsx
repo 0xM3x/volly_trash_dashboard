@@ -1,19 +1,28 @@
 import { useState } from 'react';
 import logo from '../assets/vollylogo.png';
+import axios from '../utils/axiosInstance';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (email === 'admin@admin.com' && password === 'admin') {
-      localStorage.setItem('user', JSON.stringify({ email }));
-      window.location.href = '/';
-    } else {
-      setError('E-posta veya şifre hatalı.');
+    try {
+      const response = await axios.post('/auth/login', { email, password });
+      const { token, user } = response.data;
+
+      localStorage.setItem('token', token); 
+      localStorage.setItem('user', JSON.stringify(user));
+      window.location.href = '/'; // Redirect to the home page 
+    } catch (err) {
+      if (err.response && err.response.status === 401) {
+        setError('E-posta veya şifre hatalı.');
+      } else {
+        setError('Bir hata oluştu. Lütfen tekrar deneyin.');
+      }
     }
   };
 
