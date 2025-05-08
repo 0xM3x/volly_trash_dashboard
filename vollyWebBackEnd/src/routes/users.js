@@ -76,5 +76,21 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
+// GET /api/users/me
+router.get('/me', authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, name, email, role, client_id FROM users WHERE id = $1',
+      [req.user.id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ message: 'Sunucu hatası' });
+  }
+});
+
 module.exports = router;
 
