@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import toast from 'react-hot-toast';
+import axios from '../utils/axiosInstance';
 
 export default function SettingsPage() {
   const [showModal, setShowModal] = useState(false);
@@ -9,6 +10,7 @@ export default function SettingsPage() {
   const [notification, setNotification] = useState(null);
 	const [companyName, setCompanyName] = useState('Volly Teknoloji A.Ş.');
 	const [companyAddress, setCompanyAddress] = useState('İstanbul, Türkiye');
+  const [users, setUsers] = useState([]);
 
   const handleSaveRole = () => {
     if (!selectedUser || !selectedRole) {
@@ -31,6 +33,12 @@ export default function SettingsPage() {
 	  }
 	  setTimeout(() => setNotification(null), 3000);
 	};
+
+  useEffect(() => {
+  axios.get('/users')
+    .then(res => setUsers(res.data.users))
+    .catch(() => toast.error('Kullanıcılar yüklenemedi.'));
+  }, []);
 
   return (
     <Layout>
@@ -118,8 +126,11 @@ export default function SettingsPage() {
                 className="w-full p-2 border border-gray-300 rounded text-sm"
               >
                 <option value="">Seçiniz</option>
-                <option value="user1">Ali Yılmaz</option>
-                <option value="user2">Mehmet Kaya</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.name}
+                  </option>
+                ))}
               </select>
             </div>
 
