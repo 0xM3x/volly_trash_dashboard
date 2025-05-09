@@ -13,16 +13,19 @@ export default function SettingsPage() {
   const [users, setUsers] = useState([]);
 
   const handleSaveRole = () => {
-    if (!selectedUser || !selectedRole) {
-      toast.error('Lütfen kullanıcı ve rol seçin.');
-    } else {
-      toast.success('Yetki başarıyla güncellendi.');
-      setShowModal(false);
-      setSelectedUser('');
-      setSelectedRole('');
-    }
+   if (!selectedUser || !selectedRole) {
+     toast.error('Lütfen kullanıcı ve rol seçin.');
+     return;
+   }
 
-    setTimeout(() => setNotification(null), 3000);
+   axios.put(`/users/${selectedUser}/role`, { role: selectedRole })
+     .then(() => {
+       toast.success('Yetki başarıyla güncellendi.');
+       setShowModal(false);
+       setSelectedUser('');
+       setSelectedRole('');
+     })
+     .catch(() => toast.error('Yetki güncelleme başarısız.'));
   };
 
 	const handleCompanyUpdate = () => {

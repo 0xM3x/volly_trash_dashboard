@@ -93,5 +93,28 @@ router.get('/me', authenticateToken, async (req, res) => {
   }
 });
 
+// PUT /api/users/:id/role - Update user role (admin only)
+router.put('/:id/role', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Erişim reddedildi' });
+  }
+
+  const { id } = req.params;
+  const { role } = req.body;
+
+  const allowedRoles = ['admin', 'client_user'];
+  if (!allowedRoles.includes(role)) {
+    return res.status(400).json({ message: 'Geçersiz rol' });
+  }
+
+  try {
+    await pool.query('UPDATE users SET role = $1 WHERE id = $2', [role, id]);
+    res.json({ message: 'Rol başarıyla güncellendi' });
+  } catch (err) {
+    console.error('Rol güncelleme hatası:', err);
+    res.status(500).json({ message: 'Sunucu hatası' });
+  }
+});
+
 module.exports = router;
 
