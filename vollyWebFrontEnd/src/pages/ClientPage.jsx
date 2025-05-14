@@ -1,16 +1,26 @@
+import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import AddClientModal from '../components/AddClientModal';
-import { useState } from 'react';
+import axios from '../utils/axiosInstance';
+import toast from 'react-hot-toast';
 
 export default function ClientPage() {
-  const [clients, setClients] = useState([
-    { id: 1, name: 'ABC Teknoloji', email: 'abc@example.com', status: 'Aktif' },
-    { id: 2, name: 'Delta Şirketi', email: 'delta@example.com', status: 'Pasif' },
-  ]);
+  const [clients, setClients] = useState([]);
   const [showModal, setShowModal] = useState(false);
 
-  const handleAddClient = (newClient) => {
-    setClients([...clients, newClient]);
+  const fetchClients = () => {
+    axios.get('/clients')
+      .then(res => setClients(res.data.clients))
+      .catch(() => toast.error('Müşteri listesi alınamadı.'));
+  };
+
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  const handleAddClient = () => {
+    fetchClients(); // reload list after modal add
+    setShowModal(false);
   };
 
   return (
@@ -30,14 +40,8 @@ export default function ClientPage() {
           {clients.map((client) => (
             <div key={client.id} className="bg-white shadow rounded-xl p-4 space-y-1">
               <h3 className="text-lg font-semibold text-blue-600">{client.name}</h3>
-              <p className="text-sm text-gray-600">{client.email}</p>
-              <span
-                className={`inline-block px-2 py-1 text-xs rounded ${
-                  client.status === 'Aktif' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
-                }`}
-              >
-                {client.status}
-              </span>
+              <p className="text-sm text-gray-600">Firma Kodu: {client.company_id}</p>
+              <p className="text-xs text-gray-400">Oluşturulma: {new Date(client.created_at).toLocaleDateString('tr-TR')}</p>
             </div>
           ))}
         </div>
@@ -52,4 +56,3 @@ export default function ClientPage() {
     </Layout>
   );
 }
-
