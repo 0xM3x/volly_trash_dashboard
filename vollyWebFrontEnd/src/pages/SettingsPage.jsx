@@ -3,6 +3,15 @@ import Layout from '../components/Layout';
 import toast from 'react-hot-toast';
 import axios from '../utils/axiosInstance';
 
+let storedUser = null;
+try {
+  storedUser = JSON.parse(localStorage.getItem('user')) || null;
+} catch (error) {
+  console.error('Stored user parse error:', error);
+  storedUser = null;
+}
+
+
 export default function SettingsPage() {
   const [showModal, setShowModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState('');
@@ -28,20 +37,33 @@ export default function SettingsPage() {
      .catch(() => toast.error('Yetki güncelleme başarısız.'));
   };
 
-	const handleCompanyUpdate = () => {
-	  if (!companyName || !companyAddress) {
-	    toast.error('Tüm firma bilgilerini doldurun.');
-	  } else {
-	    toast.success('Firma bilgileri başarıyla güncellendi.');
-	  }
-	  setTimeout(() => setNotification(null), 3000);
-	};
-
+  const handleCompanyUpdate = () => {
+    if (!companyName) {
+      toast.error('Firma adı gerekli');
+      return;
+    }
+  
+    axios.put(`/clients/${storedUser?.client_id}`, { name: companyName })
+      .then(() => toast.success('Firma adı başarıyla güncellendi.'))
+      .catch(() => toast.error('Güncelleme başarısız.'));
+  };
+  
   useEffect(() => {
-  axios.get('/users')
-    .then(res => setUsers(res.data.users))
-    .catch(() => toast.error('Kullanıcılar yüklenemedi.'));
+    // Fetch Users (admin-only)
+    if (storedUser?.role === 'admin') {
+      axios.get('/users')
+        .then(res => setUsers(res.data.users))
+        .catch(() => toast.error('Kullanıcılar yüklenemedi.'));
+    }
+  
+    // Fetch Company Info (admin or client_user)
+    if (storedUser?.role === 'admin' || storedUser?.role === 'client_user') {
+      axios.get(`/clients/${storedUser.client_id}`)
+        .then(res => setCompanyName(res.data.name))
+        .catch(() => toast.error('Firma bilgisi yüklenemedi.'));
+    }
   }, []);
+
 
   return (
     <Layout>
@@ -82,15 +104,6 @@ export default function SettingsPage() {
 							  type="text"
 							  value={companyName}
 							  onChange={(e) => setCompanyName(e.target.value)}
-							  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
-							/>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Adres</label>
-							<input
-							  type="text"
-							  value={companyAddress}
-							  onChange={(e) => setCompanyAddress(e.target.value)}
 							  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
 							/>
             </div>
