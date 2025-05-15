@@ -12,23 +12,19 @@ router.post('/', authenticateToken, async (req, res) => {
     return res.status(400).json({ message: 'Tüm alanlar gereklidir' });
   }
 
-  // Only allow admins to create users
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Yetkiniz yok' });
   }
 
   try {
-    // Check if email already exists
     const existing = await pool.query('SELECT 1 FROM users WHERE email = $1', [email]);
     if (existing.rowCount > 0) {
       return res.status(400).json({ message: 'Bu e-posta zaten kayıtlı' });
     }
 
-    // Hash password
     const saltRounds = 10;
     const passwordHash = await bcrypt.hash(password, saltRounds);
 
-    // Insert user
     const result = await pool.query(
       `INSERT INTO users (name, email, password_hash, role, client_id)
        VALUES ($1, $2, $3, $4, $5)
@@ -38,24 +34,22 @@ router.post('/', authenticateToken, async (req, res) => {
 
     res.status(201).json({ user: result.rows[0] });
   } catch (err) {
-		  console.error('User registration error:', err);
+    console.error('User registration error:', err);
 
-			const allowedRoles = ['admin', 'client_user'];
-			if (!allowedRoles.includes(role)) {
-			  return res.status(400).json({ message: 'Kayıt başarısız, bilgileri kontrol edin' });
-			}
+    const allowedRoles = ['admin', 'client_admin', 'client_user'];
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({ message: 'Kayıt başarısız, bilgileri kontrol edin' });
+    }
 
-  		// PostgreSQL constraint violation for invalid enum/check values
-  		if (err.code === '23514') {
-  		  return res.status(400).json({ message: 'Kayıt başarısız, bilgileri kontrol edin' });
-  		}
+    if (err.code === '23514') {
+      return res.status(400).json({ message: 'Kayıt başarısız, bilgileri kontrol edin' });
+    }
 
-  		// Unique email constraint
-  		if (err.code === '23505') {
-  		  return res.status(400).json({ message: 'Bu e-posta zaten kayıtlı' });
-  		}
+    if (err.code === '23505') {
+      return res.status(400).json({ message: 'Bu e-posta zaten kayıtlı' });
+    }
 
-  		res.status(500).json({ message: 'Sunucu hatası' });
+    res.status(500).json({ message: 'Sunucu hatası' });
   }
 });
 
@@ -66,9 +60,6 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 
   try {
-    // const result = await pool.query(
-    //   `SELECT id, name, email, role, client_id, created_at FROM users ORDER BY created_at DESC`
-    // );
     const result = await pool.query('SELECT id, name, email, role FROM users ORDER BY id ASC');
     res.json({ users: result.rows });
   } catch (err) {
@@ -102,7 +93,7 @@ router.put('/:id/role', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const { role } = req.body;
 
-  const allowedRoles = ['admin', 'client_user'];
+  const allowedRoles = ['admin', 'client_admin', 'client_user'];
   if (!allowedRoles.includes(role)) {
     return res.status(400).json({ message: 'Geçersiz rol' });
   }
@@ -117,4 +108,3 @@ router.put('/:id/role', authenticateToken, async (req, res) => {
 });
 
 module.exports = router;
-
