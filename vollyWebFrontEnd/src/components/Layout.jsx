@@ -10,6 +10,7 @@ import {
 } from 'react-icons/fi';
 import { MdCircle } from 'react-icons/md';
 import { useEffect, useState } from 'react';
+import axios from '../utils/axiosInstance';
 
 export default function Layout({ children }) {
   const navigate = useNavigate();
@@ -17,11 +18,13 @@ export default function Layout({ children }) {
 	const location = useLocation();
 	const [expanded, setExpanded] = useState(false);
 
-  const devices = [
-    { id: 1, name: 'Cihaz 1', status: 'online' },
-    { id: 2, name: 'Cihaz 2', status: 'offline' },
-    { id: 3, name: 'Cihaz 3', status: 'online' },
-  ];
+  const [devices, setDevices] = useState([]);
+
+  useEffect(() => {
+    axios.get('/devices')
+      .then(res => setDevices(res.data.devices))
+      .catch(() => toast.error('Cihazlar yüklenemedi.'));
+  }, []);
 
 	useEffect(() => {
     // Automatically expand if current route is a device page

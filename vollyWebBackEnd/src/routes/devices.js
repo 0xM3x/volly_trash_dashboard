@@ -1,23 +1,23 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const authenticateToken = require('../middleware/authMiddleware');
+const authenticateToken  = require('../middleware/authMiddleware');
 
 // GET /api/devices - List all or client-specific devices
 router.get('/', authenticateToken, async (req, res) => {
   try {
-    let query = `SELECT id, name, unique_id, status, client_id, created_at FROM devices`;
-    let values = [];
+    let query = `SELECT id, name, unique_id, board_mac, status, client_id, created_at FROM devices`;
+    const params = [];
 
-    // If not admin, filter by client_id
+    // Filter devices if not admin
     if (req.user.role !== 'admin') {
       query += ` WHERE client_id = $1`;
-      values.push(req.user.clientId);
+      params.push(req.user.client_id);
     }
 
     query += ` ORDER BY created_at DESC`;
 
-    const result = await pool.query(query, values);
+    const result = await pool.query(query, params);
     res.json({ devices: result.rows });
   } catch (err) {
     console.error('Device list error:', err);
@@ -38,13 +38,13 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 
   try {
-    // Check for existing MAC
+    // Check for existing MAC address
     const macCheck = await pool.query('SELECT 1 FROM devices WHERE board_mac = $1', [board_mac]);
     if (macCheck.rowCount > 0) {
       return res.status(400).json({ message: 'Bu kart zaten kayıtlı' });
     }
 
-    // Get last unique_id for this client and increment
+    // Generate next unique_id for this client
     const lastDevice = await pool.query(
       'SELECT unique_id FROM devices WHERE client_id = $1 ORDER BY unique_id DESC LIMIT 1',
       [client_id]
@@ -65,7 +65,6 @@ router.post('/', authenticateToken, async (req, res) => {
     );
 
     res.status(201).json({ device: result.rows[0] });
-
   } catch (err) {
     console.error('Device registration error:', err);
     res.status(500).json({ message: 'Sunucu hatası' });
