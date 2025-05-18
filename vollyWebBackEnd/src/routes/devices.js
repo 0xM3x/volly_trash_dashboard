@@ -71,4 +71,31 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 });
 
+
+// GET /api/devices/:id - Get specific device info
+router.get('/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await pool.query(
+      'SELECT id, name, unique_id, board_mac, status, client_id, created_at FROM devices WHERE id = $1',
+      [id]
+    );
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Cihaz bulunamadı' });
+    }
+
+    // Optional: restrict to owner
+    if (req.user.role !== 'admin' && result.rows[0].client_id !== req.user.client_id) {
+      return res.status(403).json({ message: 'Erişim reddedildi' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Cihaz bilgisi alma hatası:', err);
+    res.status(500).json({ message: 'Sunucu hatası' });
+  }
+});
+
+
 module.exports = router;
