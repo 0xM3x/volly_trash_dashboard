@@ -2,17 +2,42 @@ import Layout from '../components/Layout';
 import { FaUserCircle } from 'react-icons/fa';
 import axios from '../utils/axiosInstance';
 import { useEffect, useState  } from 'react';
-import { set } from 'date-fns';
+import toast from 'react-hot-toast';
 
 export default function ProfilePage() {
   const [userInfo, setUserInfo] = useState(null);
   const [error, setError] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
   useEffect(() => {
     axios.get('/users/me')
     .then((res) => setUserInfo(res.data))
     .catch(() => setError('bilgileri alınamadı.'));
   }, []);
+
+
+  const handlePasswordChange = () => {
+    if (newPassword !== confirmNewPassword) {
+      toast.error('Yeni şifreler eşleşmiyor');
+      return;
+    }
+
+    axios.put('/users/change-password', { oldPassword, newPassword })
+      .then(() => {
+        toast.success('Şifre başarıyla güncellendi');
+        setShowModal(false);
+        setOldPassword('');
+        setNewPassword('');
+        setConfirmNewPassword('');
+      })
+      .catch(err => {
+        const msg = err.response?.data?.message || 'Şifre güncellenemedi';
+        toast.error(msg);
+      });
+  };
 
   if (error) {
     return <div className='text-red-500 p-4 text-center'>{error}</div>;
@@ -61,12 +86,30 @@ export default function ProfilePage() {
             </div>
 
             <div className="mt-6">
-              <button className="bg-blue-600 text-white text-sm px-4 py-2 rounded hover:bg-blue-700">
+              <button 
+                onClick={() => setShowModal(true)}
+                className="bg-blue-600 text-white text-sm px-4 py-2 rounded hover:bg-blue-700"
+              >
                 Şifreyi Güncelle
               </button>
             </div>
           </div>
         </div>
+
+        {showModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-xl shadow-md space-y-4 w-full max-w-md">
+              <h3 className="text-lg font-bold text-gray-800">Şifreyi Güncelle</h3>
+              <input type="password" placeholder="Eski Şifre" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} className="w-full border border-gray-300 px-3 py-2 rounded-md" />
+              <input type="password" placeholder="Yeni Şifre" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full border border-gray-300 px-3 py-2 rounded-md" />
+              <input type="password" placeholder="Yeni Şifre (Tekrar)" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} className="w-full border border-gray-300 px-3 py-2 rounded-md" />
+              <div className="flex justify-end gap-2">
+                <button onClick={() => setShowModal(false)} className="px-4 py-2 border border-gray-300 rounded">İptal</button>
+                <button onClick={handlePasswordChange} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Kaydet</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );

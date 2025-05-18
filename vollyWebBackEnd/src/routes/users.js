@@ -107,4 +107,35 @@ router.put('/:id/role', authenticateToken, async (req, res) => {
   }
 });
 
+router.put('/change-password', authenticateToken, async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+
+  if (!oldPassword || !newPassword) {
+    return res.status(400).json({ message: 'Tüm alanlar gereklidir' });
+  }
+
+  try {
+    const userResult = await pool.query('SELECT password_hash FROM users WHERE id = $1', [req.user.id]);
+    if (userResult.rowCount === 0) {
+      return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
+    }
+
+    const user = userResult.rows[0];
+    const isMatch = await bcrypt.compare(oldPassword, user.password_hash);
+
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Eski şifre hatalı' });
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    await pool.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hashedNewPassword, req.user.id]);
+
+    res.json({ message: 'Şifre başarıyla güncellendi' });
+  } catch (err) {
+    console.error('Şifre güncelleme hatası:', err);
+    res.status(500).json({ message: 'Sunucu hatası' });
+  }
+});
+
+
 module.exports = router;
