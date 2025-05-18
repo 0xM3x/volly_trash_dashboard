@@ -62,50 +62,19 @@ export default function Layout({ children }) {
               <FiHome /> Panel
             </NavLink>
 
-            {/* Cihazlar Sub-menu */}
-            <div>
-              <button
-                onClick={() => setExpanded(!expanded)}
-                className="w-full flex items-center justify-between py-2 px-6 hover:bg-blue-100 text-gray-700"
-              >
-                <span className="flex items-center gap-2">
-                  <FiCpu />
-                  Cihazlar
-                </span>
-                {expanded ? (
-                  <FiChevronUp className="text-sm" />
-                ) : (
-                  <FiChevronDown className="text-sm" />
-                )}
-              </button>
-              {expanded && (
-                <ul className="ml-8 mt-2 space-y-1">
-                  {devices.map((device) => (
-                    <li key={device.id}>
-                      <NavLink
-                        to={`/device/${device.id}`}
-                        className={({ isActive }) =>
-                          `flex items-center justify-between px-2 py-1 rounded-md transition ${
-                            isActive
-                              ? 'text-blue-700 font-medium bg-blue-50'
-                              : 'text-gray-700 hover:text-blue-600'
-                          }`
-                        }
-                      >
-                        <span>{device.name}</span>
-                        <MdCircle
-                          className={`text-xs ${
-                            device.status === 'online'
-                              ? 'text-green-500'
-                              : 'text-red-500'
-                          }`}
-                        />
-                      </NavLink>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+            {/* Cihazlar */}
+            <NavLink 
+              to="/devices" 
+              className={({ isActive }) =>
+                `flex items-center gap-2 py-2 px-6 rounded-lg transition ${
+                  isActive
+                    ? 'bg-blue-100 text-blue-700 font-semibold'
+                    : 'text-gray-700 hover:bg-blue-100'
+                }`
+              }
+            >
+              <FiCpu /> Cihazlar
+            </NavLink>
 
             <NavLink
               to="/settings"
