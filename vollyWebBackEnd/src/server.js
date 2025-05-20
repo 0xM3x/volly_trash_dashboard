@@ -37,6 +37,22 @@ app.get('/api/db-test', async (req, res) => {
   }
 });
 
+// ✅ New logic starts here
+const http = require('http');
+const { Server } = require('socket.io');
+const setupMQTT = require('./mqttHandler');
+
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: { origin: '*' },
+});
+
+setupMQTT(io);
+
+io.on('connection', (socket) => {
+  console.log('⚡ WebSocket client connected');
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
