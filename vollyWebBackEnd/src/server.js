@@ -8,6 +8,8 @@ const userRoutes = require('./routes/users');
 const clientRoutes = require('./routes/clients');
 const deviceRoutes = require('./routes/devices');
 const logRoutes = require('./routes/logs');
+const statsRoutes = require('./routes/stats');
+
 
 
 dotenv.config();
@@ -24,6 +26,8 @@ app.use('/api/users', authenticateToken, userRoutes);
 app.use('/api/clients', authenticateToken, clientRoutes);
 app.use('/api/devices', authenticateToken, deviceRoutes);
 app.use('/api/logs', authenticateToken, logRoutes);
+app.use('/api/stats', authenticateToken, statsRoutes);
+
 
 
 app.get('/', (req, res) => {
