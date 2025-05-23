@@ -14,5 +14,5 @@ client.on('connect', () => {
     };
     client.publish('trash/sensors', JSON.stringify(mockData));
     console.log('🚀 Published fake sensor data:', mockData);
-  }, 1000);
+  }, 5000);
 });
