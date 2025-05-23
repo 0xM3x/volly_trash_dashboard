@@ -53,8 +53,8 @@ io.on('connection', (socket) => {
   console.log('⚡ WebSocket client connected');
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+const PORT = process.env.PORT || 8000;
+server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
 

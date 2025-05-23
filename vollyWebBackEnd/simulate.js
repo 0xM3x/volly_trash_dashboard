@@ -6,9 +6,9 @@ client.on('connect', () => {
 
   setInterval(() => {
     const mockData = {
-      id: 'esp32_test',
+      id: '005',
       distance: Math.floor(Math.random() * 100),
-      temperature: (20 + Math.random() * 10).toFixed(1),
+      temperature: (20 + Math.random() * 10),
       gas: Math.floor(Math.random() * 1000),
       current: Math.floor(2500 + Math.random() * 1000)
     };
