@@ -73,29 +73,31 @@ router.post('/', authenticateToken, async (req, res) => {
 
 
 // GET /api/devices/:id - Get specific device info
-router.get('/:id', authenticateToken, async (req, res) => {
-  const { id } = req.params;
+router.get('/:id', async (req, res) => {
+  const deviceId = req.params.id;
 
   try {
-    const result = await pool.query(
-      'SELECT id, name, unique_id, board_mac, status, client_id, created_at FROM devices WHERE id = $1',
-      [id]
-    );
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: 'Cihaz bulunamadı' });
+    const query = 'SELECT * FROM devices WHERE id = $1';
+    const result = await pool.query(query, [deviceId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Device not found' });
     }
 
-    // Optional: restrict to owner
-    if (req.user.role !== 'admin' && result.rows[0].client_id !== req.user.client_id) {
-      return res.status(403).json({ message: 'Erişim reddedildi' });
+    const device = result.rows[0];
+
+    // If not admin, check ownership
+    if (req.user.role !== 'admin' && device.client_id !== req.user.client_id) {
+      return res.status(403).json({ error: 'Access denied' });
     }
 
-    res.json(result.rows[0]);
-  } catch (err) {
-    console.error('Cihaz bilgisi alma hatası:', err);
-    res.status(500).json({ message: 'Sunucu hatası' });
+    res.json(device);
+  } catch (error) {
+    console.error('Error fetching device:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 
 
 module.exports = router;

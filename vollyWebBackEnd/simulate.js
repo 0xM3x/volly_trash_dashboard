@@ -6,8 +6,9 @@ client.on('connect', () => {
 
   setInterval(() => {
     const mockData = {
-      id: '005',
+      id: '001',
       distance: Math.floor(Math.random() * 100),
+      // distance: 27,
       temperature: (20 + Math.random() * 10),
       gas: Math.floor(Math.random() * 1000),
       current: Math.floor(2500 + Math.random() * 1000)

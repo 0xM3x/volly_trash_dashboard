@@ -11,7 +11,6 @@ router.post('/login', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
 
-    // If no user found OR password doesn't match → same error
     const user = result.rows[0];
     const isValid = user ? await bcrypt.compare(password, user.password_hash) : false;
 
@@ -20,7 +19,11 @@ router.post('/login', async (req, res) => {
     }
 
     const token = jwt.sign(
-      { id: user.id, role: user.role, clientId: user.client_id },
+      {
+        id: user.id,
+        role: user.role,
+        client_id: user.client_id // ✅ include client_id explicitly
+      },
       process.env.JWT_SECRET,
       { expiresIn: '12h' }
     );
@@ -43,4 +46,3 @@ router.post('/login', async (req, res) => {
 });
 
 module.exports = router;
-
