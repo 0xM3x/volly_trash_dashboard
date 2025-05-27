@@ -9,8 +9,7 @@ const clientRoutes = require('./routes/clients');
 const deviceRoutes = require('./routes/devices');
 const logRoutes = require('./routes/logs');
 const statsRoutes = require('./routes/stats');
-
-
+const notificationRoutes = require('./routes/notifications');
 
 dotenv.config();
 
@@ -18,7 +17,7 @@ const app = express();
 app.use(cors({
   origin: 'http://localhost:5173', 
   credentials: true
-  }));
+}));
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
@@ -27,8 +26,7 @@ app.use('/api/clients', authenticateToken, clientRoutes);
 app.use('/api/devices', authenticateToken, deviceRoutes);
 app.use('/api/logs', authenticateToken, logRoutes);
 app.use('/api/stats', authenticateToken, statsRoutes);
-
-
+app.use('/api/notifications', notificationRoutes);
 
 app.get('/', (req, res) => {
   res.send('Volly Backend Running');
@@ -44,7 +42,6 @@ app.get('/api/db-test', async (req, res) => {
   }
 });
 
-// ✅ New logic starts here
 const http = require('http');
 const { Server } = require('socket.io');
 const setupMQTT = require('./mqttHandler');
@@ -54,14 +51,25 @@ const io = new Server(server, {
   cors: { origin: '*' },
 });
 
+app.set('io', io); // 🔥 Make socket instance available to routes
 setupMQTT(io);
 
 io.on('connection', (socket) => {
   console.log('⚡ WebSocket client connected');
+
+  socket.on('register', (userId) => {
+    if (userId) {
+      socket.join(userId.toString());
+      console.log(`📡 User registered for notifications: ${userId}`);
+    }
+  });
+
+  socket.on('disconnect', () => {
+    console.log('❌ WebSocket client disconnected');
+  });
 });
 
 const PORT = process.env.PORT || 8000;
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
-
