@@ -35,6 +35,12 @@ const TopBar = () => {
     if (storedUser) {
       setUser(storedUser);
       socket.emit('register', storedUser.id);
+
+      axios.get('/users/me')
+        .then(res => {
+          setUser(prev => ({ ...prev, client_name: res.data.client_name }));
+        })
+        .catch(() => console.warn('Firma adı alınamadı'));
     }
   }, []);
 
@@ -44,7 +50,6 @@ const TopBar = () => {
       try {
         const res = await axios.get('/notifications');
         setNotifications(res.data);
-        // setHasUnread(res.data.some((n) => !n.is_read));
         const unreadCount = res.data.filter(n => !n.is_read).length;
         setHasUnread(unreadCount > 0);
       } catch (err) {
@@ -96,17 +101,21 @@ const TopBar = () => {
     prevNotifOpen.current = notifOpen;
   }, [notifOpen, hasUnread]);
 
+  const getPageTitle = (path) => {
+    if (path === '/') return 'Ana Sayfa';
+    if (path.startsWith('/dashboard')) return 'Dashboard';
+    if (path.startsWith('/devices') || path.startsWith('/device')) return 'Cihazlar';
+    if (path.startsWith('/settings')) return 'Ayarlar';
+    if (path.startsWith('/profile')) return 'Profil';
+    if (path.startsWith('/clients')) return 'Müşteriler';
+    return 'Uygulama';
+  };
+
   const roleLabel = {
     admin: 'Yönetici',
     client_admin: 'Müşteri Yöneticisi',
     client_user: 'Kullanıcı',
   }[user.role] || 'Bilinmiyor';
-
-  const pageTitle = {
-    '/': 'Ana Sayfa',
-    '/dashboard': 'Dashboard',
-    '/devices': 'Cihazlar',
-  }[location.pathname] || 'Uygulama';
 
   const handleLogout = () => {
     localStorage.removeItem('user');
@@ -130,7 +139,7 @@ const TopBar = () => {
   return (
     <>
       <div className="bg-white shadow-sm px-6 py-4 flex justify-between items-center border-b border-gray-200">
-        <h1 className="text-xl font-bold text-blue-600 tracking-tight">{pageTitle}</h1>
+        <h1 className="text-xl font-bold text-blue-600 tracking-tight">{getPageTitle(location.pathname)}</h1>
 
         <div className="flex items-center gap-4">
           <div className="relative" ref={notifRef}>
@@ -197,7 +206,7 @@ const TopBar = () => {
                   </p>
                   {user.role !== 'admin' && (
                     <p className="text-gray-600 flex items-center gap-2 mt-1">
-                      <FiHome /> Firma: {user.client_id || 'Bilinmiyor'}
+                      <FiHome /> Firma: {user.client_name || 'Bilinmiyor'}
                     </p>
                   )}
                 </div>

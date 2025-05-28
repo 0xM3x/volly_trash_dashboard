@@ -50,7 +50,6 @@ export default function ProfilePage() {
   return (
     <Layout>
       <div className="p-6 space-y-6">
-        <h2 className="text-2xl font-bold text-blue-900">Profil</h2>
 
         <div className="bg-white rounded-2xl shadow-md p-6 flex flex-col md:flex-row items-center md:items-start gap-8">
           {/* Avatar */}
@@ -100,11 +99,11 @@ export default function ProfilePage() {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
             <div className="bg-white p-6 rounded-xl shadow-md space-y-4 w-full max-w-md">
               <h3 className="text-lg font-bold text-gray-800">Şifreyi Güncelle</h3>
-              <input type="password" placeholder="Eski Şifre" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} className="w-full border border-gray-300 px-3 py-2 rounded-md" />
-              <input type="password" placeholder="Yeni Şifre" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full border border-gray-300 px-3 py-2 rounded-md" />
-              <input type="password" placeholder="Yeni Şifre (Tekrar)" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} className="w-full border border-gray-300 px-3 py-2 rounded-md" />
+              <input type="password" placeholder="Eski Şifre" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} className="w-full border border-gray-300 px-3 py-2 rounded-md text-sm hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+              <input type="password" placeholder="Yeni Şifre" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="w-full border border-gray-300 px-3 py-2 rounded-md text-sm hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+              <input type="password" placeholder="Yeni Şifre (Tekrar)" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} className="w-full border border-gray-300 px-3 py-2 rounded-md text-sm hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
               <div className="flex justify-end gap-2">
-                <button onClick={() => setShowModal(false)} className="px-4 py-2 border border-gray-300 rounded">İptal</button>
+                <button onClick={() => setShowModal(false)} className="px-4 py-2 border border-gray-300 rounded text-sm hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-blue-500 focus:text-white transition">İptal</button>
                 <button onClick={handlePasswordChange} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Kaydet</button>
               </div>
             </div>

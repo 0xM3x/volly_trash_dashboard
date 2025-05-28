@@ -151,7 +151,7 @@ export default function DashboardPage() {
                     className="bg-green-500 h-5 rounded-full transition-all duration-500 ease-in-out"
                     style={{ width: `${device.percent}%` }}
                   />
-                  <span className={`absolute right-2 top-1/2 transform -translate-y-1/2 text-xs font-semibold ${device.percent >= 96 ? 'text-white' : 'text-black'}`}>
+                  <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs font-semibold text-gray-600">
                     {device.percent}%
                   </span>
                 </div>

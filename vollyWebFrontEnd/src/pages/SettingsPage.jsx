@@ -78,7 +78,6 @@ export default function SettingsPage() {
           </div>
         )}
 
-        <h2 className="text-2xl font-bold text-blue-600">Ayarlar</h2>
 
         {/* Yetki Yönetimi */}
         <div className="bg-white rounded-2xl shadow-md p-6">
@@ -104,7 +103,7 @@ export default function SettingsPage() {
 							  type="text"
 							  value={companyName}
 							  onChange={(e) => setCompanyName(e.target.value)}
-							  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 text-sm"
+							  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition shadow-sm focus:outline-none"
 							/>
             </div>
           </div>
@@ -139,7 +138,7 @@ export default function SettingsPage() {
               <select
                 value={selectedUser}
                 onChange={(e) => setSelectedUser(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition shadow-sm focus:outline-none"
               >
                 <option value="">Seçiniz</option>
                 {users.map((user) => (
@@ -155,7 +154,7 @@ export default function SettingsPage() {
               <select
                 value={selectedRole}
                 onChange={(e) => setSelectedRole(e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition shadow-sm focus:outline-none"
               >
                 <option value="">Seçiniz</option>
                 <option value="admin">Yönetici</option>

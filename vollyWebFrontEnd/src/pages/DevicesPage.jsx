@@ -35,26 +35,24 @@ export default function DevicePage() {
   return (
     <Layout>
       <div className="p-6 space-y-6">
-        <h2 className="text-2xl font-bold text-blue-600 mb-4">Cihazlar</h2>
-
         {/* Search and Filter */}
         <div className="flex flex-col md:flex-row gap-4 mb-4">
           <input
-            type="text"
-            placeholder="Cihaz adı, MAC adresi veya benzersiz ID ara..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full md:w-1/2 px-3 py-2 border border-gray-300 rounded-md text-sm"
-          />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full md:w-48 px-3 py-2 border border-gray-300 rounded-md text-sm"
-          >
-            <option value="all">Tüm Durumlar</option>
-            <option value="online">Çevrimiçi</option>
-            <option value="offline">Çevrimdışı</option>
-          </select>
+             type="text"
+             placeholder="Cihaz adı, MAC adresi veya benzersiz ID ara..."
+             value={searchTerm}
+             onChange={(e) => setSearchTerm(e.target.value)}
+             className="w-full md:w-1/2 px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200"
+           />
+           <select
+             value={statusFilter}
+             onChange={(e) => setStatusFilter(e.target.value)}
+             className="w-full md:w-48 px-4 py-2 border border-gray-300 rounded-lg shadow-sm text-sm text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200"
+           >
+             <option value="all">Tüm Durumlar</option>
+             <option value="online">Çevrimiçi</option>
+             <option value="offline">Çevrimdışı</option>
+           </select>
         </div>
 
         {filteredDevices.length === 0 ? (

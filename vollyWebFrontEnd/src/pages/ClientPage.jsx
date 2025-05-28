@@ -36,7 +36,6 @@ export default function ClientPage() {
   return (
     <Layout>
       <div className="p-6 space-y-6">
-        <h2 className="text-2xl font-bold text-blue-600 mb-4">Müşteriler</h2>
 
         {/* Search, Filter, and Button on the Same Line */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
