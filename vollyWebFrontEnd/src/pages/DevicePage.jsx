@@ -26,7 +26,6 @@ export default function DeviceDetailPage() {
   const [liveMode, setLiveMode] = useState(true);
   const [showCalendar, setShowCalendar] = useState(false);
   const [error, setError] = useState('');
-  const [dateKey, setDateKey] = useState(0);
 
   const isToday = (date) => {
     const today = new Date();
@@ -40,7 +39,7 @@ export default function DeviceDetailPage() {
   useEffect(() => {
     axios.get(`/devices/${id}`)
       .then(res => setDeviceInfo(res.data))
-      .catch(() => setError('Cihaz bilgisi alınamadı.'));
+      .catch(() => toast.error('Cihaz bilgisi alınamadı.'));
   }, [id]);
 
   const mapDistanceToPercent = (distance) => {
@@ -82,12 +81,15 @@ export default function DeviceDetailPage() {
   useEffect(() => {
     if (!deviceInfo || !selectedDate) return;
 
-    if (isToday(selectedDate)) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (selectedDate.toDateString() === today.toDateString()) {
       setLiveMode(true);
       return;
-    } else {
-      setLiveMode(false);
     }
+
+    setLiveMode(false);
 
     const endDate = selectedDate.toISOString().split('T')[0];
     const startDate = new Date(selectedDate);
@@ -102,9 +104,7 @@ export default function DeviceDetailPage() {
           return;
         }
 
-        const avg = (key) => Math.round(
-          logs.reduce((acc, cur) => acc + Number(cur[key] ?? 0), 0) / logs.length
-        );
+        const avg = (key) => Math.round(logs.reduce((acc, cur) => acc + Number(cur[key] ?? 0), 0) / logs.length);
 
         setSensorData({
           gaz: avg('gas'),
@@ -122,11 +122,7 @@ export default function DeviceDetailPage() {
 
             const dayLogs = logs.filter(log => {
               const logDate = new Date(log.timestamp);
-              return (
-                logDate.getFullYear() === date.getFullYear() &&
-                logDate.getMonth() === date.getMonth() &&
-                logDate.getDate() === date.getDate()
-              );
+              return logDate.toDateString() === date.toDateString();
             });
 
             const avg = dayLogs.length > 0
@@ -142,10 +138,7 @@ export default function DeviceDetailPage() {
           gaz: get7DayGraph('gas'),
           sicaklik: get7DayGraph('temperature'),
           nem: get7DayGraph('current'),
-          doluluk: get7DayGraph('distance').map(d => ({
-            time: d.time,
-            value: mapDistanceToPercent(d.value)
-          }))
+          doluluk: get7DayGraph('distance').map(d => ({ time: d.time, value: mapDistanceToPercent(d.value) }))
         });
       })
       .catch(() => toast.error('Geçmiş veriler yüklenemedi'));
@@ -154,96 +147,121 @@ export default function DeviceDetailPage() {
   return (
     <Layout>
       <div className="space-y-6 px-4">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={selectedDate.toDateString()}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            transition={{ duration: 0.3 }}
-          >
-            <div className="w-full bg-white rounded-xl shadow p-4 flex justify-between items-center">
-  <div className="flex items-center gap-2">
-    <button
-      className="text-gray-500 hover:text-gray-700"
-      onClick={() => {
-        const newDate = new Date(selectedDate);
-        newDate.setDate(newDate.getDate() - 1);
-        setSelectedDate(newDate);
-        setDateKey(prev => prev + 1);
-      }}>
-      <FiChevronLeft size={22} />
-    </button>
-    <span className="text-gray-500 text-sm">
-      {new Date(selectedDate.getTime() - 86400000).toLocaleDateString('tr-TR')}
-    </span>
-  </div>
+       {/* Calendar Section */}
+       <AnimatePresence mode="wait">
+         <motion.div
+           key={selectedDate.toDateString()}
+           initial={{ opacity: 0, x: 20 }}
+           animate={{ opacity: 1, x: 0 }}
+           exit={{ opacity: 0, x: -20 }}
+           transition={{ duration: 0.3 }}
+         >
+           <div className="bg-white rounded-xl shadow p-4 flex justify-between items-center">
+             <div className="flex items-center gap-2">
+               <button
+                 onClick={() => {
+                   const newDate = new Date(selectedDate);
+                   newDate.setDate(newDate.getDate() - 1);
+                   setSelectedDate(newDate);
+                   setDateKey(prev => prev + 1); // ✅ ensure this line is added
+                 }}
+               >
+                 <FiChevronLeft size={22} />
+               </button>
+               <span className="text-gray-500 text-sm">
+                 {new Date(selectedDate.getTime() - 86400000).toLocaleDateString('tr-TR')}
+               </span>
+             </div>
+                
+             <button
+               onClick={() => setShowCalendar(true)}
+               className="text-blue-700 font-semibold hover:scale-105 transition"
+             >
+               📅 {selectedDate.toLocaleDateString('tr-TR')}
+             </button>
+                
+             <div className="flex items-center gap-2">
+               <span className="text-gray-500 text-sm">
+                 {new Date(selectedDate.getTime() + 86400000).toLocaleDateString('tr-TR')}
+               </span>
+               <button
+                 className={`${isToday(selectedDate) ? 'opacity-30 pointer-events-none' : ''}`}
+                 onClick={() => {
+                   const today = new Date();
+                   today.setHours(0, 0, 0, 0);
+                   const nextDate = new Date(selectedDate);
+                   nextDate.setDate(nextDate.getDate() + 1);
+                   if (nextDate <= today) {
+                     setSelectedDate(nextDate);
+                     setDateKey(prev => prev + 1); // ✅ ensure this line is added
+                   }
+                 }}
+               >
+                 <FiChevronRight size={22} />
+               </button>
+             </div>
+           </div>
+         </motion.div>
+       </AnimatePresence>
 
-  <button
-    onClick={() => setShowCalendar(true)}
-    className="text-blue-700 font-semibold hover:scale-105 transition transform transition-transform duration-300"
-    key={selectedDate.toDateString()}
-  >
-    📅 {selectedDate.toLocaleDateString('tr-TR')}
-  </button>
+        <Transition appear show={showCalendar} as={Fragment}>
+          <Dialog as="div" className="relative z-50" onClose={() => setShowCalendar(false)}>
+            <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+            <div className="fixed inset-0 flex items-center justify-center p-4">
+              <Transition.Child
+                as={Fragment}
+                enter="transition ease-out duration-200"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="transition ease-in duration-150"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="bg-white rounded-xl shadow-xl p-6">
+                  <DayPicker
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(date) => {
+                      if (date) {
+                        setSelectedDate(date);
+                        setShowCalendar(false);
+                      }
+                    }}
+                    locale={tr}
+                    toDate={new Date()}
+                  />
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </Dialog>
+        </Transition>
+        {/* Sensor Cards and Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="bg-white rounded-xl shadow p-6 text-sm space-y-2">
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">Cihaz Bilgisi</h3>
+            <p><strong>ID:</strong> {deviceInfo?.id}</p>
+            <p><strong>İsim:</strong> {deviceInfo?.name}</p>
+            <p><strong>MAC Adresi:</strong> {deviceInfo?.board_mac}</p>
+            <p><strong>UID:</strong> {deviceInfo?.unique_id}</p>
+            <p><strong>Durum:</strong> {deviceInfo?.status || 'Bilinmiyor'}</p>
+          </div>
 
-  <div className="flex items-center gap-2">
-    <span className="text-gray-500 text-sm">
-      {new Date(selectedDate.getTime() + 86400000).toLocaleDateString('tr-TR')}
-    </span>
-    <button
-      className={`text-gray-500 hover:text-gray-700 ${isToday(selectedDate) ? 'opacity-30 pointer-events-none' : ''}`}
-      onClick={() => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const nextDate = new Date(selectedDate);
-        nextDate.setDate(nextDate.getDate() + 1);
-        if (nextDate <= today) {
-          setSelectedDate(nextDate);
-          setDateKey(prev => prev + 1);
-        }
-      }}>
-      <FiChevronRight size={22} />
-    </button>
-  </div>
-</div>
+          <div className="bg-white rounded-xl shadow p-4">
+            <h3 className="text-lg font-semibold text-gray-700 mb-2">Cihaz Haritası</h3>
+            <iframe
+              src="https://maps.google.com/maps?q=41.015137,28.979530&z=15&output=embed"
+              width="100%"
+              height="250"
+              className="rounded-xl border"
+              allowFullScreen=""
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              title="Device Location"
+            ></iframe>
+          </div>
+        </div>
 
-<Transition appear show={showCalendar} as={Fragment}>
-  <Dialog as="div" className="relative z-50" onClose={() => setShowCalendar(false)}>
-    <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-    <div className="fixed inset-0 flex items-center justify-center p-4">
-      <Transition.Child
-        as={Fragment}
-        enter="transition ease-out duration-200"
-        enterFrom="opacity-0 scale-95"
-        enterTo="opacity-100 scale-100"
-        leave="transition ease-in duration-150"
-        leaveFrom="opacity-100 scale-100"
-        leaveTo="opacity-0 scale-95"
-      >
-        <Dialog.Panel className="bg-white rounded-xl shadow-xl p-6">
-          <DayPicker
-            mode="single"
-            selected={selectedDate}
-            onSelect={(date) => {
-              if (date) {
-                setSelectedDate(date);
-                setShowCalendar(false);
-              }
-            }}
-            locale={tr}
-            toDate={new Date()}
-          />
-        </Dialog.Panel>
-      </Transition.Child>
-    </div>
-  </Dialog>
-</Transition>
-          </motion.div>
-        </AnimatePresence>
-
-        {/* Sensor Info + Graphs */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center justify-center text-center">
             <div className="w-40 h-40">
               <CircularProgressbar
@@ -280,7 +298,7 @@ export default function DeviceDetailPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <LineChartCard title="Gaz Grafiği" data={graphData.gaz} color="#16a34a" />
           <LineChartCard title="Sıcaklık Grafiği" data={graphData.sicaklik} color="#dc2626" />
           <LineChartCard title="Nem Grafiği" data={graphData.nem} color="#2563eb" />
