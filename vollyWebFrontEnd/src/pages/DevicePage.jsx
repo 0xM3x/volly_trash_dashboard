@@ -50,6 +50,10 @@ export default function DeviceDetailPage() {
     return Math.round(((max - distance) / (max - min)) * 100);
   };
 
+  const mapCurrentToPercent = (raw) => {
+    return Math.min(100, Math.round((raw / 4095) * 100));
+  };
+
   useEffect(() => {
     if (!liveMode || !deviceInfo) return;
 
@@ -60,16 +64,16 @@ export default function DeviceDetailPage() {
       const dolulukOrani = mapDistanceToPercent(data.distance ?? 100);
 
       setSensorData({
-        gaz: data.gas ?? 0,
+        gaz: data.gas ? Math.round((data.gas / 2900) * 100) : 0,
         sicaklik: data.temperature ?? 0,
-        nem: data.current ?? 0,
+        nem: mapCurrentToPercent(data.current ?? 0),
         doluluk: dolulukOrani
       });
 
       setGraphData(prev => ({
         gaz: [...prev.gaz.slice(-9), { time: now, value: data.gas ?? 0 }],
         sicaklik: [...prev.sicaklik.slice(-9), { time: now, value: data.temperature ?? 0 }],
-        nem: [...prev.nem.slice(-9), { time: now, value: data.current ?? 0 }],
+        nem: [...prev.nem.slice(-9), { time: now, value: mapCurrentToPercent(data.current ?? 0) }],
         doluluk: [...prev.doluluk.slice(-9), { time: now, value: dolulukOrani }]
       }));
     };
@@ -109,7 +113,7 @@ export default function DeviceDetailPage() {
         setSensorData({
           gaz: avg('gas'),
           sicaklik: parseFloat((logs.reduce((a, b) => a + b.temperature, 0) / logs.length).toFixed(1)),
-          nem: avg('current'),
+          nem: mapCurrentToPercent(avg('current')),
           doluluk: 0
         });
 
@@ -129,7 +133,7 @@ export default function DeviceDetailPage() {
               ? dayLogs.reduce((acc, cur) => acc + Number(cur[key] ?? 0), 0) / dayLogs.length
               : 0;
 
-            result.push({ time: label, value: parseFloat(avg.toFixed(1)) });
+            result.push({ time: label, value: key === 'current' ? mapCurrentToPercent(avg) : parseFloat(avg.toFixed(1)) });
           }
           return result;
         };
@@ -238,7 +242,9 @@ export default function DeviceDetailPage() {
         {/* Sensor Cards and Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="bg-white rounded-xl shadow p-6 text-sm space-y-2">
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">Cihaz Bilgisi</h3>
+            <div className="bg-gray-100 px-4 py-2 border-b border-gray-200">
+              <h3 className="text-md font-semibold text-gray-700">Cihaz Bilgisi</h3>
+            </div>
             <p><strong>ID:</strong> {deviceInfo?.id}</p>
             <p><strong>İsim:</strong> {deviceInfo?.name}</p>
             <p><strong>MAC Adresi:</strong> {deviceInfo?.board_mac}</p>
@@ -246,20 +252,37 @@ export default function DeviceDetailPage() {
             <p><strong>Durum:</strong> {deviceInfo?.status || 'Bilinmiyor'}</p>
           </div>
 
-          <div className="bg-white rounded-xl shadow p-4">
-            <h3 className="text-lg font-semibold text-gray-700 mb-2">Cihaz Haritası</h3>
+          <div className="rounded-xl overflow-hidden shadow-lg border border-gray-200">
+            <div className="bg-gray-100 px-4 py-2 border-b border-gray-200">
+              <h3 className="text-md font-semibold text-gray-700">Cihaz Haritası</h3>
+            </div>
+            <div className="w-full h-64">
+              <iframe
+                src="https://www.google.com/maps?q=41.031478143983286,29.047465523760746&z=15&output=embed"
+                className="w-full h-full"
+                allowFullScreen
+                referrerPolicy="no-referrer-when-downgrade"
+                title="Device Location"
+              ></iframe>
+            </div>
+          </div>
+        </div>
+
+        {/* <div className="rounded-xl overflow-hidden shadow-lg border border-gray-200">
+          <div className="bg-gray-100 px-4 py-2 border-b border-gray-200">
+            <h3 className="text-md font-semibold text-gray-700">Cihaz Konumu</h3>
+          </div>
+          <div className="w-full h-64">
             <iframe
               src="https://maps.google.com/maps?q=41.015137,28.979530&z=15&output=embed"
-              width="100%"
-              height="250"
-              className="rounded-xl border"
-              allowFullScreen=""
+              className="w-full h-full"
               loading="lazy"
+              allowFullScreen
               referrerPolicy="no-referrer-when-downgrade"
               title="Device Location"
             ></iframe>
           </div>
-        </div>
+        </div> */}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center justify-center text-center">
