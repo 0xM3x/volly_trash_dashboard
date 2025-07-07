@@ -72,6 +72,29 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 });
 
+// GET /api/devices/map - Get locations of full or all devices
+router.get('/map', authenticateToken, async (req, res) => {
+  try {
+    let query = `
+      SELECT id, name, latitude, longitude, client_id
+      FROM devices
+      WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+    `;
+    const params = [];
+
+    // Filter based on user role
+    if (req.user.role === 'client_admin' || req.user.role === 'client_user') {
+      query += ` AND client_id = $1`;
+      params.push(req.user.client_id);
+    }
+
+    const result = await pool.query(query, params);
+    res.json({ devices: result.rows });
+  } catch (err) {
+    console.error('Map devices fetch error:', err);
+    res.status(500).json({ message: 'Sunucu hatası' });
+  }
+});
 
 // GET /api/devices/:id - Get specific device info
 router.get('/:id', async (req, res) => {
