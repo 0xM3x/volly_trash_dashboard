@@ -27,13 +27,14 @@ router.get('/', authenticateToken, async (req, res) => {
 
 // POST /api/devices - Admin-only device registration
 router.post('/', authenticateToken, async (req, res) => {
-  const { name, board_mac, client_id } = req.body;
+  const { name, board_mac, client_id, latitude, longitude } = req.body;
+
 
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Yetkiniz yok' });
   }
 
-  if (!name || !board_mac || !client_id) {
+  if (!name || !board_mac || !client_id || !latitude || !longitude) {
     return res.status(400).json({ message: 'Tüm alanlar zorunludur' });
   }
 
@@ -58,10 +59,10 @@ router.post('/', authenticateToken, async (req, res) => {
 
     // Insert new device
     const result = await pool.query(
-      `INSERT INTO devices (name, unique_id, board_mac, client_id)
-       VALUES ($1, $2, $3, $4)
-       RETURNING id, name, unique_id, board_mac, status, client_id, created_at`,
-      [name, nextId, board_mac, client_id]
+       `INSERT INTO devices (name, unique_id, board_mac, client_id, latitude, longitude)
+        VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, name, unique_id, board_mac, status, client_id, latitude, longitude, created_at`,
+      [name, nextId, board_mac, client_id, latitude, longitude]
     );
 
     res.status(201).json({ device: result.rows[0] });
