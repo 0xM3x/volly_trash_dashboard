@@ -83,12 +83,18 @@ function setupMQTT(io) {
 function generateDefaultMessage(event, window_open) {
   switch (event) {
     case 'full': return 'Çöp kutusu dolu';
-    case 'gas_alert': return 'Gaz seviyesi yüksek!';
-    case 'door_open': return 'Kapak açıldı';
+    case 'empty': return 'Çöp kutusu boş';
     case 'press_active': return 'Presleme işlemi çalışıyor';
+    case 'press_stop': return 'Pres durdu';
+    case 'gas_alert': return 'Gaz seviyesi yüksek!';
+    case 'gas_ok': return 'Gaz seviyesi normal';
+    case 'door_open': return 'Kapak açıldı';
+    case 'door_close': return 'Kapak kapandı';
     case 'window_open': return 'Pencere açık';
+    case 'window_close': return 'Pencere kapandı';
     default: return 'Yeni bildirim';
   }
 }
+
 
 module.exports = setupMQTT;
