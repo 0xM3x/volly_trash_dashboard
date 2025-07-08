@@ -50,40 +50,55 @@ export default function RouteMapPage() {
     loadDevices();
   }, []);
 
-  // Optimize route between full bins, starting from user location
-  const handleOptimizeRoute = () => {
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const start = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        };
-        setUserLocation([start.lat, start.lng]);
-
-        try {
-          const token = localStorage.getItem('token');
-          const response = await axios.post(
-            'http://localhost:8000/api/devices/route',
-            { start },
-            {
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-
-          setRoute(response.data.route);
-          setFullBins(response.data.devices);
-        } catch (err) {
-          console.error('Rota oluşturulamadı:', err);
-          alert('Rota oluşturulamadı. Bir hata oluştu.');
-        }
+  // Live location tracking
+  useEffect(() => {
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        setUserLocation([position.coords.latitude, position.coords.longitude]);
       },
       (error) => {
-        console.error('Konum alınamadı:', error);
-        alert('Konum alınamadı, lütfen konum izinlerini kontrol edin.');
+        console.error('Konum izlenemedi:', error);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 5000,
+        timeout: 10000,
       }
     );
+
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
+
+  // Optimize route between full bins, starting from user location
+  const handleOptimizeRoute = async () => {
+    if (!userLocation) {
+      alert('Konum alınamadı, lütfen konum izinlerini kontrol edin.');
+      return;
+    }
+
+    const start = {
+      lat: userLocation[0],
+      lng: userLocation[1]
+    };
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        'http://localhost:8000/api/devices/route',
+        { start },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setRoute(response.data.route);
+      setFullBins(response.data.devices);
+    } catch (err) {
+      console.error('Rota oluşturulamadı:', err);
+      alert('Rota oluşturulamadı. Bir hata oluştu.');
+    }
   };
 
   const mapCenter = userLocation || (allDevices.length
