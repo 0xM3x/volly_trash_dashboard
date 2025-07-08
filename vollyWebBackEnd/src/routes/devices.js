@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db');
 const authenticateToken  = require('../middleware/authMiddleware');
+const axios = require('axios');
+require('dotenv').config();
+
 
 // GET /api/devices - List all or client-specific devices
 router.get('/', authenticateToken, async (req, res) => {
@@ -95,6 +98,60 @@ router.get('/map', authenticateToken, async (req, res) => {
     res.status(500).json({ message: 'Sunucu hatası' });
   }
 });
+
+// GET /api/devices/route - Route optimization for client_user
+router.get('/route', authenticateToken, async (req, res) => {
+  try {
+    if (req.user.role !== 'client_user') {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const clientId = req.user.client_id;
+
+    // Select latest notification per device and filter only those with event = 'full'
+    const result = await pool.query(`
+      SELECT n.device_id, d.name, d.latitude, d.longitude
+      FROM (
+        SELECT DISTINCT ON (device_id) *
+        FROM notifications
+        ORDER BY device_id, created_at DESC
+      ) n
+      JOIN devices d ON d.id = n.device_id
+      WHERE n.message = 'Çöp kutusu dolu' AND d.client_id = $1
+    `, [clientId]);
+
+    const coords = result.rows
+      .filter(row => row.latitude && row.longitude)
+      .map(row => [parseFloat(row.longitude), parseFloat(row.latitude)]); // ORS expects [lng, lat]
+
+    if (coords.length < 2) {
+      return res.status(400).json({ message: 'Not enough full trash bins to create a route' });
+    }
+
+    const orsResponse = await axios.post(
+      'https://api.openrouteservice.org/v2/directions/driving-car/geojson',
+      {
+        coordinates: coords,
+        instructions: false,
+      },
+      {
+        headers: {
+          Authorization: process.env.ORS_API_KEY,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    res.json({
+      route: orsResponse.data,
+      devices: result.rows,
+    });
+  } catch (err) {
+    console.error('Route optimization error:', err.message);
+    res.status(500).json({ message: 'An error occurred while calculating the route' });
+  }
+});
+
 
 // GET /api/devices/:id - Get specific device info
 router.get('/:id', async (req, res) => {

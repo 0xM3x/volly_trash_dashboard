@@ -60,9 +60,9 @@ function setupMQTT(io) {
 
         for (const user of usersResult.rows) {
           await pool.query(`
-            INSERT INTO notifications (user_id, message)
-            VALUES ($1, $2)
-          `, [user.id, finalMessage]);
+            INSERT INTO notifications (user_id, message, device_id)
+            VALUES ($1, $2, $3)
+          `, [user.id, finalMessage, device_id]);
 
           io.to(user.id.toString()).emit('notification', {
             message: finalMessage,
@@ -86,7 +86,7 @@ function generateDefaultMessage(event, window_open) {
     case 'gas_alert': return 'Gaz seviyesi yüksek!';
     case 'door_open': return 'Kapak açıldı';
     case 'press_active': return 'Presleme işlemi çalışıyor';
-    case 'window_open': return window_open ? 'Pencere açık' : 'Pencere kapalı';
+    case 'window_open': return 'Pencere açık';
     default: return 'Yeni bildirim';
   }
 }
