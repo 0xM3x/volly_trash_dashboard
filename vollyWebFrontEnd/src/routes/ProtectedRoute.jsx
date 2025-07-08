@@ -1,11 +1,3 @@
-// import { Navigate } from 'react-router-dom';
-
-// export default function ProtectedRoute({ children }) {
-//   const isLoggedIn = !!localStorage.getItem('user');
-//   return isLoggedIn ? children : <Navigate to="/login" replace />;
-// }
-
-
 import { Navigate, useLocation } from 'react-router-dom';
 
 export default function ProtectedRoute({ children, allowedRoles }) {
@@ -14,6 +6,14 @@ export default function ProtectedRoute({ children, allowedRoles }) {
 
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // ✅ Restrict client_user to only /route-map and their profile
+  if (user.role === 'client_user') {
+    const allowedPaths = ['/route-map', `/profile/${user.id}`];
+    if (!allowedPaths.includes(location.pathname)) {
+      return <Navigate to="/route-map" replace />;
+    }
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {

@@ -99,16 +99,17 @@ router.get('/map', authenticateToken, async (req, res) => {
   }
 });
 
-// GET /api/devices/route - Route optimization for client_user
-router.get('/route', authenticateToken, async (req, res) => {
+// POST /api/devices/route - Route optimization with optional start point
+router.post('/route', authenticateToken, async (req, res) => {
   try {
     if (req.user.role !== 'client_user') {
       return res.status(403).json({ message: 'Access denied' });
     }
 
     const clientId = req.user.client_id;
+    const start = req.body.start; // { lat, lng }
 
-    // Select latest notification per device and filter only those with event = 'full'
+    // Fetch latest notification per device (only "full" ones)
     const result = await pool.query(`
       SELECT n.device_id, d.name, d.latitude, d.longitude
       FROM (
@@ -120,14 +121,20 @@ router.get('/route', authenticateToken, async (req, res) => {
       WHERE n.message = 'Çöp kutusu dolu' AND d.client_id = $1
     `, [clientId]);
 
-    const coords = result.rows
+    let coords = result.rows
       .filter(row => row.latitude && row.longitude)
-      .map(row => [parseFloat(row.longitude), parseFloat(row.latitude)]); // ORS expects [lng, lat]
+      .map(row => [parseFloat(row.longitude), parseFloat(row.latitude)]); // ORS needs [lng, lat]
+
+    if (start && start.lat && start.lng) {
+      // Add user location at the beginning
+      coords = [[parseFloat(start.lng), parseFloat(start.lat)], ...coords];
+    }
 
     if (coords.length < 2) {
       return res.status(400).json({ message: 'Not enough full trash bins to create a route' });
     }
 
+    // Request optimized route from OpenRouteService
     const orsResponse = await axios.post(
       'https://api.openrouteservice.org/v2/directions/driving-car/geojson',
       {
@@ -151,7 +158,6 @@ router.get('/route', authenticateToken, async (req, res) => {
     res.status(500).json({ message: 'An error occurred while calculating the route' });
   }
 });
-
 
 // GET /api/devices/:id - Get specific device info
 router.get('/:id', async (req, res) => {

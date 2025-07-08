@@ -15,7 +15,7 @@ import {
 
 const socket = io('http://localhost:8000');
 
-const TopBar = () => {
+const TopBar = ({ hideNotifications = false }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -142,46 +142,48 @@ const TopBar = () => {
         <h1 className="text-xl font-bold text-blue-600 tracking-tight">{getPageTitle(location.pathname)}</h1>
 
         <div className="flex items-center gap-4">
-          <div className="relative" ref={notifRef}>
-            <button
-              onClick={handleNotificationClick}
-              className="relative text-gray-500 hover:text-blue-600"
-            >
-              <FiBell className="text-xl" />
-              {notifications.filter(n => !n.is_read).length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1">
-                  {notifications.filter(n => !n.is_read).length}
-                </span>
-              )}
-            </button>
-            {notifOpen && (
-              <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg z-50 text-sm overflow-hidden ring-1 ring-gray-200">
-                <div className="px-4 py-3 font-semibold bg-gray-50 text-gray-700 border-b border-gray-100">
-                  Bildirimler
-                </div>
-                <ul className="max-h-64 overflow-y-auto divide-y divide-gray-100">
-                  {notifications.filter(n => !n.is_read).length > 0 ? (
-                    notifications.filter(n => !n.is_read).map((note, idx) => (
-                      <li
-                        key={idx}
-                        className="px-4 py-3 cursor-pointer text-gray-700 hover:bg-blue-50 font-semibold"
-                      >
-                        • {note.message}
-                      </li>
-                    ))
-                  ) : (
-                    <li className="px-4 py-3 text-gray-500">Yeni bildirim yok</li>
-                  )}
-                </ul>
-                <div
-                  onClick={() => setShowAll(true)}
-                  className="px-4 py-2 text-center text-sm text-blue-600 hover:scale-105 transition-transform cursor-pointer"
-                >
-                  Tüm Bildirimleri Gör
-                </div>
-              </div>
-            )}
-          </div>
+          {!hideNotifications && (
+            <div className="relative" ref={notifRef}>
+             <button
+               onClick={handleNotificationClick}
+               className="relative text-gray-500 hover:text-blue-600"
+             >
+               <FiBell className="text-xl" />
+               {notifications.filter(n => !n.is_read).length > 0 && (
+                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1">
+                   {notifications.filter(n => !n.is_read).length}
+                 </span>
+               )}
+             </button>
+             {notifOpen && (
+               <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg z-50 text-sm overflow-hidden ring-1 ring-gray-200">
+                 <div className="px-4 py-3 font-semibold bg-gray-50 text-gray-700 border-b border-gray-100">
+                   Bildirimler
+                 </div>
+                 <ul className="max-h-64 overflow-y-auto divide-y divide-gray-100">
+                   {notifications.filter(n => !n.is_read).length > 0 ? (
+                     notifications.filter(n => !n.is_read).map((note, idx) => (
+                       <li
+                         key={idx}
+                         className="px-4 py-3 cursor-pointer text-gray-700 hover:bg-blue-50 font-semibold"
+                       >
+                         • {note.message}
+                       </li>
+                     ))
+                   ) : (
+                     <li className="px-4 py-3 text-gray-500">Yeni bildirim yok</li>
+                   )}
+                 </ul>
+                 <div
+                   onClick={() => setShowAll(true)}
+                   className="px-4 py-2 text-center text-sm text-blue-600 hover:scale-105 transition-transform cursor-pointer"
+                 >
+                   Tüm Bildirimleri Gör
+                 </div>
+               </div>
+             )}
+          </div> 
+          )}
 
           <div className="relative" ref={dropdownRef}>
             <button
