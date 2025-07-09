@@ -5,14 +5,12 @@ const authenticateToken  = require('../middleware/authMiddleware');
 const axios = require('axios');
 require('dotenv').config();
 
-
 // GET /api/devices - List all or client-specific devices
 router.get('/', authenticateToken, async (req, res) => {
   try {
     let query = `SELECT id, name, unique_id, board_mac, status, client_id, created_at FROM devices`;
     const params = [];
 
-    // Filter devices if not admin
     if (req.user.role !== 'admin') {
       query += ` WHERE client_id = $1`;
       params.push(req.user.client_id);
@@ -32,7 +30,6 @@ router.get('/', authenticateToken, async (req, res) => {
 router.post('/', authenticateToken, async (req, res) => {
   const { name, board_mac, client_id, latitude, longitude } = req.body;
 
-
   if (req.user.role !== 'admin') {
     return res.status(403).json({ message: 'Yetkiniz yok' });
   }
@@ -42,13 +39,11 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 
   try {
-    // Check for existing MAC address
     const macCheck = await pool.query('SELECT 1 FROM devices WHERE board_mac = $1', [board_mac]);
     if (macCheck.rowCount > 0) {
       return res.status(400).json({ message: 'Bu kart zaten kayıtlı' });
     }
 
-    // Generate next unique_id for this client
     const lastDevice = await pool.query(
       'SELECT unique_id FROM devices WHERE client_id = $1 ORDER BY unique_id DESC LIMIT 1',
       [client_id]
@@ -60,7 +55,6 @@ router.post('/', authenticateToken, async (req, res) => {
       nextId = (lastHex + 1).toString(16).padStart(3, '0').toUpperCase();
     }
 
-    // Insert new device
     const result = await pool.query(
        `INSERT INTO devices (name, unique_id, board_mac, client_id, latitude, longitude)
         VALUES ($1, $2, $3, $4, $5, $6)
@@ -75,19 +69,18 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 });
 
-// GET /api/devices/map - Get locations of full or all devices
+// GET /api/devices/map - Get locations of all devices (no fullness)
 router.get('/map', authenticateToken, async (req, res) => {
   try {
     let query = `
-      SELECT id, name, latitude, longitude, client_id
-      FROM devices
-      WHERE latitude IS NOT NULL AND longitude IS NOT NULL
+      SELECT d.id, d.name, d.latitude, d.longitude, d.client_id
+      FROM devices d
+      WHERE d.latitude IS NOT NULL AND d.longitude IS NOT NULL
     `;
     const params = [];
 
-    // Filter based on user role
     if (req.user.role === 'client_admin' || req.user.role === 'client_user') {
-      query += ` AND client_id = $1`;
+      query += ` AND d.client_id = $1`;
       params.push(req.user.client_id);
     }
 
@@ -107,34 +100,34 @@ router.post('/route', authenticateToken, async (req, res) => {
     }
 
     const clientId = req.user.client_id;
-    const start = req.body.start; // { lat, lng }
+    const start = req.body.start;
 
-    // Fetch latest notification per device (only "full" ones)
     const result = await pool.query(`
-      SELECT n.device_id, d.name, d.latitude, d.longitude
-      FROM (
-        SELECT DISTINCT ON (device_id) *
-        FROM notifications
-        ORDER BY device_id, created_at DESC
-      ) n
-      JOIN devices d ON d.id = n.device_id
-      WHERE n.message = 'Çöp kutusu dolu' AND d.client_id = $1
+      SELECT d.id, d.name, d.latitude, d.longitude
+      FROM devices d
+      WHERE d.client_id = $1
+        AND d.latitude IS NOT NULL AND d.longitude IS NOT NULL
+        AND EXISTS (
+          SELECT 1 FROM notifications f
+          WHERE f.device_id = d.id AND f.message = 'Çöp kutusu dolu'
+          AND f.created_at > COALESCE((
+            SELECT e.created_at FROM notifications e
+            WHERE e.device_id = d.id AND e.message = 'Çöp kutusu boş'
+            ORDER BY e.created_at DESC LIMIT 1
+          ), '1970-01-01')
+        )
     `, [clientId]);
 
-    let coords = result.rows
-      .filter(row => row.latitude && row.longitude)
-      .map(row => [parseFloat(row.longitude), parseFloat(row.latitude)]); // ORS needs [lng, lat]
+    let coords = result.rows.map(row => [parseFloat(row.longitude), parseFloat(row.latitude)]);
 
     if (start && start.lat && start.lng) {
-      // Add user location at the beginning
       coords = [[parseFloat(start.lng), parseFloat(start.lat)], ...coords];
     }
 
     if (coords.length < 2) {
-      return res.status(400).json({ message: 'Not enough full trash bins to create a route' });
+      return res.status(400).json({ message: 'Toplanacak yeterli çöp kutusu yok' });
     }
 
-    // Request optimized route from OpenRouteService
     const orsResponse = await axios.post(
       'https://api.openrouteservice.org/v2/directions/driving-car/geojson',
       {
@@ -155,7 +148,7 @@ router.post('/route', authenticateToken, async (req, res) => {
     });
   } catch (err) {
     console.error('Route optimization error:', err.message);
-    res.status(500).json({ message: 'An error occurred while calculating the route' });
+    res.status(500).json({ message: 'Rota oluşturulurken hata oluştu' });
   }
 });
 
@@ -173,7 +166,6 @@ router.get('/:id', async (req, res) => {
 
     const device = result.rows[0];
 
-    // If not admin, check ownership
     if (req.user.role !== 'admin' && device.client_id !== req.user.client_id) {
       return res.status(403).json({ error: 'Access denied' });
     }
@@ -184,7 +176,5 @@ router.get('/:id', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
-
 
 module.exports = router;

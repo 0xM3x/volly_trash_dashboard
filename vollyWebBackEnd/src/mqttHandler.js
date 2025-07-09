@@ -21,7 +21,10 @@ function setupMQTT(io) {
       console.log('📥 MQTT message received on topic', topic, ':', data);
 
       if (topic === 'trash/sensors') {
-        const result = await pool.query('SELECT 1 FROM devices WHERE unique_id = $1', [data.id]);
+        const result = await pool.query(
+          'SELECT 1 FROM devices WHERE unique_id = $1',
+          [data.id]
+        );
 
         if (result.rowCount > 0) {
           await pool.query(`
@@ -30,6 +33,7 @@ function setupMQTT(io) {
           `, [data.id, data.distance, data.gas, data.temperature, data.current]);
 
           io.emit('sensor-data', data);
+          console.log('📤 sensor-data emitted to all clients:', data);
         } else {
           console.warn('[MQTT] Ignored sensor message from unknown device:', data.id);
         }
@@ -47,14 +51,16 @@ function setupMQTT(io) {
           [device_id]
         );
 
-
         if (deviceResult.rowCount === 0) {
           console.warn('[MQTT] Unknown device for notification:', device_id);
           return;
         }
 
         const clientId = deviceResult.rows[0].client_id;
-        const usersResult = await pool.query('SELECT id FROM users WHERE client_id = $1', [clientId]);
+        const usersResult = await pool.query(
+          'SELECT id FROM users WHERE client_id = $1',
+          [clientId]
+        );
 
         const finalMessage = msg || generateDefaultMessage(event, window_open);
 
@@ -71,6 +77,9 @@ function setupMQTT(io) {
             created_at: new Date(),
           });
         }
+
+        io.emit('notification', { device_id, type: event });
+        console.log('📤 notification emitted for device:', device_id);
         console.log(`🔔 Notification saved and sent to users of client ${clientId}: ${finalMessage}`);
       }
 
@@ -95,6 +104,5 @@ function generateDefaultMessage(event, window_open) {
     default: return 'Yeni bildirim';
   }
 }
-
 
 module.exports = setupMQTT;

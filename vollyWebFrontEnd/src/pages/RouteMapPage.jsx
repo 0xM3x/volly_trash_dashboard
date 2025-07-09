@@ -4,72 +4,59 @@ import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import axios from 'axios';
 import TopBar from '../components/TopBar';
+import { io } from 'socket.io-client';
+import userIconImg from '../assets/userLocation.png';
+import deviceIconImg from '../assets/deviceLocation.png';
 
-const customIcon = new L.Icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
+const userIcon = new L.Icon({
+  iconUrl: userIconImg,
+  iconSize: [30, 40],
+  iconAnchor: [15, 40],
+  popupAnchor: [1, -40],
 });
 
+const deviceIcon = new L.Icon({
+  iconUrl: deviceIconImg,
+  iconSize: [30, 40],
+  iconAnchor: [15, 40],
+  popupAnchor: [1, -40],
+});
+
+const socket = io('http://localhost:8000');
+
 export default function RouteMapPage() {
-  const [allDevices, setAllDevices] = useState([]); // for initial pins
-  const [fullBins, setFullBins] = useState([]);     // for optimized route
+  const [allDevices, setAllDevices] = useState([]);
+  const [fullBins, setFullBins] = useState([]);
   const [route, setRoute] = useState(null);
   const [user, setUser] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
 
-  // Load user info to control TopBar props
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
     setUser(storedUser);
   }, []);
 
-  // Fetch all devices (for markers)
-  useEffect(() => {
-    const loadDevices = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await axios.get('http://localhost:8000/api/devices/map', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+  const updateMarkers = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get('http://localhost:8000/api/devices/map', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-        const devicesWithCoords = (res.data.devices || []).filter(d =>
-          d.latitude && d.longitude
-        ).map(d => ({
-          ...d,
-          latitude: parseFloat(d.latitude),
-          longitude: parseFloat(d.longitude)
-        }));
+      const devicesWithCoords = (res.data.devices || []).filter(d =>
+        d.latitude && d.longitude
+      ).map(d => ({
+        ...d,
+        latitude: parseFloat(d.latitude),
+        longitude: parseFloat(d.longitude)
+      }));
 
-        setAllDevices(devicesWithCoords);
-      } catch (err) {
-        console.error('Cihazlar yüklenemedi:', err);
-      }
-    };
-    loadDevices();
-  }, []);
+      setAllDevices(devicesWithCoords);
+    } catch (err) {
+      console.error('Cihazlar yüklenemedi:', err);
+    }
+  };
 
-  // Live location tracking
-  useEffect(() => {
-    const watchId = navigator.geolocation.watchPosition(
-      (position) => {
-        setUserLocation([position.coords.latitude, position.coords.longitude]);
-      },
-      (error) => {
-        console.error('Konum izlenemedi:', error);
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 5000,
-        timeout: 10000,
-      }
-    );
-
-    return () => navigator.geolocation.clearWatch(watchId);
-  }, []);
-
-  // Optimize route between full bins, starting from user location
   const handleOptimizeRoute = async () => {
     if (!userLocation) {
       alert('Konum alınamadı, lütfen konum izinlerini kontrol edin.');
@@ -101,9 +88,57 @@ export default function RouteMapPage() {
     }
   };
 
+  useEffect(() => {
+    updateMarkers();
+  }, []);
+
+  useEffect(() => {
+    socket.on('notification', (data) => {
+      if (data.device_id) {
+        console.log('[📡] notification received:', data);
+        updateMarkers();
+      
+        if (data.type === 'full' || data.type === 'empty') {
+          handleOptimizeRoute();
+        }
+      }
+    });
+
+    socket.on('sensor-data', (data) => {
+      console.log('[📡] sensor-data received:', data);
+      setAllDevices(prev =>
+        prev.map(d =>
+          d.unique_id === data.id ? { ...d } : d
+        )
+      );
+    });
+
+    return () => {
+      socket.off('notification');
+      socket.off('sensor-data');
+    };
+  }, [userLocation]);
+
+  useEffect(() => {
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        setUserLocation([position.coords.latitude, position.coords.longitude]);
+      },
+      (error) => {
+        console.error('Konum izlenemedi:', error);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 5000,
+        timeout: 10000,
+      }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
+
   const mapCenter = userLocation || (allDevices.length
     ? [allDevices[0].latitude, allDevices[0].longitude]
-    : [41.015137, 28.979530]); // fallback to Istanbul
+    : [41.015137, 28.979530]);
 
   return (
     <>
@@ -116,13 +151,17 @@ export default function RouteMapPage() {
           />
 
           {userLocation && (
-            <Marker position={userLocation} icon={customIcon}>
+            <Marker position={userLocation} icon={userIcon}>
               <Popup>Başlangıç Noktası (Siz)</Popup>
             </Marker>
           )}
 
           {allDevices.map((d) => (
-            <Marker key={d.device_id || d.id} position={[d.latitude, d.longitude]} icon={customIcon}>
+            <Marker
+              key={d.id}
+              position={[d.latitude, d.longitude]}
+              icon={deviceIcon}
+            >
               <Popup>
                 <strong>{d.name}</strong>
               </Popup>
