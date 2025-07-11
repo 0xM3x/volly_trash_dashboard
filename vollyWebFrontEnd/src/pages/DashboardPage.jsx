@@ -22,29 +22,68 @@ export default function DashboardPage() {
     return Math.round(((max - distance) / (max - min)) * 100);
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [statsRes, chartRes, capacityRes] = await Promise.all([
-          axios.get('/stats/summary'),
-          axios.get('/stats/fill-graph'),
-          axios.get('/stats/latest-status'),
-        ]);
-        setStats(statsRes.data);
-        setChartData(chartRes.data);
-        setCapacityData(capacityRes.data.map(device => ({
-          ...device,
-          percent: mapDistanceToPercent(device.distance ?? 100),
-        })));
-        capacityRef.current = capacityRes.data;
-      } catch (error) {
-        toast.error('Veriler alınırken bir hata oluştu');
-      }
-    };
+  const fetchStats = async () => {
+    try {
+      const res = await axios.get('/stats/summary');
+      setStats(res.data);
+    } catch {
+      toast.error('Özet veriler alınamadı');
+    }
+  };
 
-    fetchData();
+  const fetchChartAndCapacity = async () => {
+    try {
+      const [chartRes, capacityRes] = await Promise.all([
+        axios.get('/stats/fill-graph'),
+        axios.get('/stats/latest-status'),
+      ]);
+      setChartData(chartRes.data);
+      const mapped = capacityRes.data.map(device => ({
+        ...device,
+        percent: mapDistanceToPercent(device.distance ?? 100),
+      }));
+      capacityRef.current = mapped;
+      setCapacityData(mapped);
+    } catch {
+      toast.error('Grafik veya cihaz verisi alınamadı');
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+    fetchChartAndCapacity();
   }, []);
 
+  // useEffect(() => {
+  //   const handleSensorData = (data) => {
+  //     const updated = capacityRef.current.map((device) => {
+  //       if (device.unique_id === data.id) {
+  //         return {
+  //           ...device,
+  //           distance: data.distance,
+  //           percent: mapDistanceToPercent(data.distance ?? 100),
+  //         };
+  //       }
+  //       return device;
+  //     });
+  //     capacityRef.current = updated;
+  //     setCapacityData([...updated]);
+  //   };
+
+  //   const handleNotification = ({ type }) => {
+  //     if (['full', 'empty', 'gas_alert', 'gas_ok'].includes(type)) {
+  //       fetchStats();
+  //     }
+  //   };
+
+  //   socket.on('sensor-data', handleSensorData);
+  //   socket.on('notification', handleNotification);
+
+  //   return () => {
+  //     socket.off('sensor-data', handleSensorData);
+  //     socket.off('notification', handleNotification);
+  //   };
+  // }, []);
   useEffect(() => {
     const handleSensorData = (data) => {
       const updated = capacityRef.current.map((device) => {
@@ -60,10 +99,25 @@ export default function DashboardPage() {
       capacityRef.current = updated;
       setCapacityData([...updated]);
     };
-
+  
+    const handleNotification = ({ type }) => {
+      if (['full', 'empty', 'gas_alert', 'gas_ok'].includes(type)) {
+        fetchStats();
+      }
+    };
+  
+    const handleDeviceStatusUpdate = () => {
+      fetchStats(); // Real-time card update
+    };
+  
     socket.on('sensor-data', handleSensorData);
+    socket.on('notification', handleNotification);
+    socket.on('device-status-update', handleDeviceStatusUpdate);
+  
     return () => {
       socket.off('sensor-data', handleSensorData);
+      socket.off('notification', handleNotification);
+      socket.off('device-status-update', handleDeviceStatusUpdate);
     };
   }, []);
 
@@ -123,7 +177,7 @@ export default function DashboardPage() {
             height={300}
           />
         </div>
-				<div className="col-span-1 xl:col-span-3 flex flex-col gap-4 h-full">
+        <div className="col-span-1 xl:col-span-3 flex flex-col gap-4 h-full">
           <div className="bg-sky-100 text-sky-800 rounded-lg shadow p-6 flex flex-col items-center justify-center text-center h-full">
             <div className="text-sm font-medium">Bu Hafta En Çok Dolu Olan Cihaz</div>
             <div className="text-xl font-bold mt-2">{chartData.mostFilled?.name || 'Yok'}</div>
@@ -134,7 +188,7 @@ export default function DashboardPage() {
             <div className="text-xl font-bold mt-2">{chartData.leastFilled?.name || 'Yok'}</div>
             <div className="text-xs mt-1">Toplam {chartData.leastFilled?.count || 0} kez doldu</div>
           </div>
-        </div> 
+        </div>
       </div>
 
       <div className="bg-white p-4 rounded-xl shadow-md">

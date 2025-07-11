@@ -32,7 +32,13 @@ function setupMQTT(io) {
             VALUES ($1, $2, $3, $4, $5)
           `, [data.id, data.distance, data.gas, data.temperature, data.current]);
 
+          await pool.query(`
+            UPDATE devices SET status = 'online', last_seen = NOW()
+            WHERE unique_id = $1
+          `, [data.id]);
+
           io.emit('sensor-data', data);
+          io.emit('device-status-update', { unique_id: data.id, status: 'online' });
           console.log('📤 sensor-data emitted to all clients:', data);
         } else {
           console.warn('[MQTT] Ignored sensor message from unknown device:', data.id);
@@ -47,7 +53,7 @@ function setupMQTT(io) {
         }
 
         const deviceResult = await pool.query(
-          'SELECT client_id, unique_id FROM devices WHERE unique_id = $1',
+          'SELECT id, client_id, unique_id FROM devices WHERE unique_id = $1',
           [device_id]
         );
 
@@ -56,7 +62,25 @@ function setupMQTT(io) {
           return;
         }
 
-        const clientId = deviceResult.rows[0].client_id;
+        const { id: dbDeviceId, client_id: clientId, unique_id } = deviceResult.rows[0];
+
+        // Handle status logic
+        let newStatus = null;
+        if (event === 'full' || event === 'gas_alert') {
+          newStatus = 'out_of_service';
+        } else if (event === 'empty' || event === 'gas_ok') {
+          newStatus = 'online';
+        }
+
+        if (newStatus) {
+          await pool.query(
+            `UPDATE devices SET status = $1, last_seen = NOW() WHERE unique_id = $2`,
+            [newStatus, device_id]
+          );
+
+          io.emit('device-status-update', { unique_id: device_id, status: newStatus });
+        }
+
         const usersResult = await pool.query(
           'SELECT id FROM users WHERE client_id = $1',
           [clientId]
@@ -73,7 +97,7 @@ function setupMQTT(io) {
           io.to(user.id.toString()).emit('notification', {
             message: finalMessage,
             type: event,
-            unique_id: deviceResult.rows[0].unique_id,
+            unique_id,
             created_at: new Date(),
           });
         }
