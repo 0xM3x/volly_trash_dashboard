@@ -5,6 +5,8 @@ import axios from '../utils/axiosInstance';
 import toast from 'react-hot-toast';
 import { FiCpu, FiCheckCircle, FiXCircle, FiAlertTriangle } from 'react-icons/fi';
 import { io } from 'socket.io-client';
+import DashboardMap from '../components/DashboardMap';
+
 
 const socket = io('http://localhost:8000');
 
@@ -99,21 +101,21 @@ export default function DashboardPage() {
       capacityRef.current = updated;
       setCapacityData([...updated]);
     };
-  
+
     const handleNotification = ({ type }) => {
       if (['full', 'empty', 'gas_alert', 'gas_ok'].includes(type)) {
         fetchStats();
       }
     };
-  
+
     const handleDeviceStatusUpdate = () => {
       fetchStats(); // Real-time card update
     };
-  
+
     socket.on('sensor-data', handleSensorData);
     socket.on('notification', handleNotification);
     socket.on('device-status-update', handleDeviceStatusUpdate);
-  
+
     return () => {
       socket.off('sensor-data', handleSensorData);
       socket.off('notification', handleNotification);
@@ -164,7 +166,7 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-10 gap-6 mb-6">
+      {/* <div className="grid grid-cols-1 xl:grid-cols-10 gap-6 mb-6">
         <div className="col-span-1 xl:col-span-7 bg-white p-4 rounded-xl shadow-md">
           <h2 className="text-xl font-semibold mb-4">Doluluk Grafiği</h2>
           <Chart
@@ -189,6 +191,9 @@ export default function DashboardPage() {
             <div className="text-xs mt-1">Toplam {chartData.leastFilled?.count || 0} kez doldu</div>
           </div>
         </div>
+      </div> */}
+      <div className="w-full h-[500px] mb-6 rounded-xl overflow-hidden shadow">
+        <DashboardMap />
       </div>
 
       <div className="bg-white p-4 rounded-xl shadow-md">

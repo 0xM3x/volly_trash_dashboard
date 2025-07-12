@@ -73,7 +73,7 @@ router.post('/', authenticateToken, async (req, res) => {
 router.get('/map', authenticateToken, async (req, res) => {
   try {
     let query = `
-      SELECT d.id, d.name, d.latitude, d.longitude, d.client_id
+      SELECT d.id, d.unique_id, d.name, d.latitude, d.longitude, d.client_id, d.status
       FROM devices d
       WHERE d.latitude IS NOT NULL AND d.longitude IS NOT NULL
     `;

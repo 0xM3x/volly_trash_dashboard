@@ -39,7 +39,7 @@ function setupMQTT(io) {
 
           io.emit('sensor-data', data);
           io.emit('device-status-update', { unique_id: data.id, status: 'online' });
-          console.log('📤 sensor-data emitted to all clients:', data);
+          console.log('📤 sensor-data + device-status-update emitted:', data.id);
         } else {
           console.warn('[MQTT] Ignored sensor message from unknown device:', data.id);
         }
@@ -64,7 +64,6 @@ function setupMQTT(io) {
 
         const { id: dbDeviceId, client_id: clientId, unique_id } = deviceResult.rows[0];
 
-        // Handle status logic
         let newStatus = null;
         if (event === 'full' || event === 'gas_alert') {
           newStatus = 'out_of_service';
@@ -77,7 +76,6 @@ function setupMQTT(io) {
             `UPDATE devices SET status = $1, last_seen = NOW() WHERE unique_id = $2`,
             [newStatus, device_id]
           );
-
           io.emit('device-status-update', { unique_id: device_id, status: newStatus });
         }
 
@@ -103,8 +101,7 @@ function setupMQTT(io) {
         }
 
         io.emit('notification', { device_id, type: event });
-        console.log('📤 notification emitted for device:', device_id);
-        console.log(`🔔 Notification saved and sent to users of client ${clientId}: ${finalMessage}`);
+        console.log(`📤 Notification + device-status-update for ${device_id}: ${newStatus}`);
       }
 
     } catch (err) {
