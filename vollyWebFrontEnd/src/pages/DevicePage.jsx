@@ -14,6 +14,8 @@ import toast from 'react-hot-toast';
 import { io } from 'socket.io-client';
 import { Dialog, Transition } from '@headlessui/react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+
 
 const socket = io(import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000');
 
@@ -53,6 +55,24 @@ export default function DeviceDetailPage() {
   const mapCurrentToPercent = (raw) => {
     return Math.min(100, Math.round((raw / 4095) * 100));
   };
+
+  const getDeviceMap = () => {
+    if (!deviceInfo?.latitude || !deviceInfo?.longitude) {
+      return <p className="p-4">Cihaz konumu mevcut değil.</p>;
+    }
+
+    const position = [deviceInfo.latitude, deviceInfo.longitude];
+
+    return (
+      <MapContainer center={position} zoom={16} scrollWheelZoom={true} className="w-full h-full z-0">
+        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <Marker position={position}>
+          <Popup>{deviceInfo.name || 'Cihaz'}</Popup>
+        </Marker>
+      </MapContainer>
+    );
+  };
+
 
   useEffect(() => {
     if (!liveMode || !deviceInfo) return;
@@ -242,9 +262,9 @@ export default function DeviceDetailPage() {
         {/* Sensor Cards and Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="bg-white rounded-xl shadow p-6 text-sm space-y-2">
-            <div className="bg-gray-100 px-4 py-2 border-b border-gray-200">
-              <h3 className="text-md font-semibold text-gray-700">Cihaz Bilgisi</h3>
-            </div>
+            {/* <h2 className="text-md font-semibold text-black">Cihaz Bilgisi</h2> */}
+            <h3 className="text-lg font-semibold text-gray-700 tracking-wide uppercase">Cihaz Bilgisi</h3>
+
             <p><strong>ID:</strong> {deviceInfo?.id}</p>
             <p><strong>İsim:</strong> {deviceInfo?.name}</p>
             <p><strong>MAC Adresi:</strong> {deviceInfo?.board_mac}</p>
@@ -253,36 +273,11 @@ export default function DeviceDetailPage() {
           </div>
 
           <div className="rounded-xl overflow-hidden shadow-lg border border-gray-200">
-            <div className="bg-gray-100 px-4 py-2 border-b border-gray-200">
-              <h3 className="text-md font-semibold text-gray-700">Cihaz Haritası</h3>
-            </div>
             <div className="w-full h-64">
-              <iframe
-                src="https://www.google.com/maps?q=41.031478143983286,29.047465523760746&z=15&output=embed"
-                className="w-full h-full"
-                allowFullScreen
-                referrerPolicy="no-referrer-when-downgrade"
-                title="Device Location"
-              ></iframe>
+              {getDeviceMap()}
             </div>
           </div>
         </div>
-
-        {/* <div className="rounded-xl overflow-hidden shadow-lg border border-gray-200">
-          <div className="bg-gray-100 px-4 py-2 border-b border-gray-200">
-            <h3 className="text-md font-semibold text-gray-700">Cihaz Konumu</h3>
-          </div>
-          <div className="w-full h-64">
-            <iframe
-              src="https://maps.google.com/maps?q=41.015137,28.979530&z=15&output=embed"
-              className="w-full h-full"
-              loading="lazy"
-              allowFullScreen
-              referrerPolicy="no-referrer-when-downgrade"
-              title="Device Location"
-            ></iframe>
-          </div>
-        </div> */}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="bg-white rounded-xl shadow p-6 flex flex-col items-center justify-center text-center">
