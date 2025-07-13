@@ -192,7 +192,8 @@ export default function DashboardPage() {
           </div>
         </div>
       </div> */}
-      <div className="w-full h-[500px] mb-6 rounded-xl overflow-hidden shadow">
+      {/* <div className="w-full h-[500px] mb-6 rounded-xl overflow-hidden shadow"> */}
+      <div className="w-full h-[500px] mb-6 rounded-xl shadow relative z-0 overflow-visible">
         <DashboardMap />
       </div>
 
