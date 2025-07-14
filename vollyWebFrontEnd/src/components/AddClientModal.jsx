@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 
 export default function AddClientModal({ isOpen, onClose, onAdd }) {
   const [clientName, setClientName] = useState('');
-  const [users, setUsers] = useState([{ name: '', email: '', password: '', role: 'client_user' }]);
+  const [users, setUsers] = useState([{ name: '', email: '', password: '', role: 'client_admin' }]);
 
   const handleUserChange = (index, field, value) => {
     const updated = [...users];
@@ -14,7 +14,7 @@ export default function AddClientModal({ isOpen, onClose, onAdd }) {
 
   const addUserField = () => {
     if (users[users.length - 1].name.trim() && users[users.length - 1].email.trim()) {
-      setUsers([...users, { name: '', email: '', password: '', role: 'client_user' }]);
+      setUsers([...users, { name: '', email: '', password: '', role: 'client_admin' }]);
     }
   };
 
@@ -42,8 +42,8 @@ export default function AddClientModal({ isOpen, onClose, onAdd }) {
           await axios.post('/users', {
             name: user.name.trim(),
             email: user.email.trim(),
-            password: user.password.trim(),  // Or generate/send invitation logic
-            role: 'client_user',
+            password: user.password.trim(),
+            role: user.role || 'client_user',
             client_id: clientId,
           });
         }
@@ -51,7 +51,7 @@ export default function AddClientModal({ isOpen, onClose, onAdd }) {
 
       toast.success('Müşteri ve kullanıcılar başarıyla eklendi.');
       setClientName('');
-      setUsers([{ name: '', email: '', role: 'client_user' }]);
+      setUsers([{ name: '', email: '', password: '', role: 'client_admin' }]);
       onAdd(); // Refresh client list
     } catch (err) {
       console.error(err);
@@ -64,7 +64,7 @@ export default function AddClientModal({ isOpen, onClose, onAdd }) {
   return (
     <div className="fixed inset-0 bg-gray-800/40 z-50 flex items-center justify-center px-4 overflow-auto">
       <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-4xl space-y-6">
-        <h3 className="text-lg font-bold text-blue-900">Yeni Müşteri Ekle</h3>
+        <h3 className="text-lg font-bold text-blue-600">Yeni Müşteri Ekle</h3>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
@@ -78,13 +78,12 @@ export default function AddClientModal({ isOpen, onClose, onAdd }) {
             />
           </div>
 
-          {/* Yetkililer Section */}
           <div>
             <h4 className="text-sm font-semibold text-gray-700 mb-3">Yetkililer</h4>
             <div className="space-y-4">
               {users.map((user, index) => (
                 <div key={index} className="bg-gray-50 p-4 rounded-md border border-gray-200 shadow-sm relative">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                     <input
                       type="text"
                       placeholder="Ad Soyad"
@@ -109,8 +108,16 @@ export default function AddClientModal({ isOpen, onClose, onAdd }) {
                       className="px-3 py-2 border border-gray-300 rounded-md text-sm"
                       required
                     />
-
+                    <select
+                      value={user.role}
+                      onChange={(e) => handleUserChange(index, 'role', e.target.value)}
+                      className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                    >
+                      <option value="client_admin">Müşteri Yöneticisi</option>
+                      <option value="client_user">Kullanıcı</option>
+                    </select>
                   </div>
+
                   {users.length > 1 && (
                     <div className="mt-2 text-right">
                       <button type="button" onClick={() => removeUserField(index)} className="text-sm text-red-600 hover:underline">
