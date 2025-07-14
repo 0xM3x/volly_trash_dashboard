@@ -53,15 +53,39 @@ router.post('/', authenticateToken, async (req, res) => {
   }
 });
 
-// GET /api/users - List all users (admin only)
-router.get('/', authenticateToken, async (req, res) => {
-  if (req.user.role !== 'admin') {
-    return res.status(403).json({ message: 'Erişim reddedildi' });
-  }
+// // GET /api/users - List all users (admin only)
+// router.get('/', authenticateToken, async (req, res) => {
+//   if (req.user.role !== 'admin') {
+//     return res.status(403).json({ message: 'Erişim reddedildi' });
+//   }
 
+//   try {
+//     const result = await pool.query('SELECT id, name, email, role FROM users ORDER BY id ASC');
+//     res.json({ users: result.rows });
+//   } catch (err) {
+//     console.error('Kullanıcıları alma hatası:', err);
+//     res.status(500).json({ message: 'Sunucu hatası' });
+//   }
+// });
+
+router.get('/', authenticateToken, async (req, res) => {
   try {
-    const result = await pool.query('SELECT id, name, email, role FROM users ORDER BY id ASC');
-    res.json({ users: result.rows });
+    if (req.user.role === 'admin') {
+      const result = await pool.query(
+        'SELECT id, name, email, role, client_id FROM users ORDER BY id ASC'
+      );
+      return res.json({ users: result.rows });
+    }
+
+    if (req.user.role === 'client_admin') {
+      const result = await pool.query(
+        'SELECT id, name, email, role, client_id FROM users WHERE client_id = $1 ORDER BY id ASC',
+        [req.user.client_id]
+      );
+      return res.json({ users: result.rows });
+    }
+
+    return res.status(403).json({ message: 'Erişim reddedildi' });
   } catch (err) {
     console.error('Kullanıcıları alma hatası:', err);
     res.status(500).json({ message: 'Sunucu hatası' });
@@ -85,13 +109,49 @@ router.get('/me', authenticateToken, async (req, res) => {
 });
 
 // PUT /api/users/:id/role - Update user role (admin only)
-router.put('/:id/role', authenticateToken, async (req, res) => {
-  if (req.user.role !== 'admin') {
+// router.put('/:id/role', authenticateToken, async (req, res) => {
+//   if (req.user.role !== 'admin') {
+//     return res.status(403).json({ message: 'Erişim reddedildi' });
+//   }
+
+//   const { id } = req.params;
+//   const { role } = req.body;
+
+//   const allowedRoles = ['admin', 'client_admin', 'client_user'];
+//   if (!allowedRoles.includes(role)) {
+//     return res.status(400).json({ message: 'Geçersiz rol' });
+//   }
+
+//   try {
+//     await pool.query('UPDATE users SET role = $1 WHERE id = $2', [role, id]);
+//     res.json({ message: 'Rol başarıyla güncellendi' });
+//   } catch (err) {
+//     console.error('Rol güncelleme hatası:', err);
+//     res.status(500).json({ message: 'Sunucu hatası' });
+//   }
+// });
+
+// GET /api/users/by-client - List users for the same client (client_admin only)
+router.get('/by-client', authenticateToken, async (req, res) => {
+  if (req.user.role !== 'client_admin') {
     return res.status(403).json({ message: 'Erişim reddedildi' });
   }
 
+  try {
+    const result = await pool.query(
+      'SELECT id, name, email, role, client_id FROM users WHERE client_id = $1 ORDER BY id ASC',
+      [req.user.client_id]
+    );
+    res.json({ users: result.rows });
+  } catch (err) {
+    console.error('Client kullanıcılarını alma hatası:', err);
+    res.status(500).json({ message: 'Sunucu hatası' });
+  }
+});
+
+router.put('/:id/role', authenticateToken, async (req, res) => {
   const { id } = req.params;
-  const { role } = req.body;
+  const { role, client_id } = req.body;
 
   const allowedRoles = ['admin', 'client_admin', 'client_user'];
   if (!allowedRoles.includes(role)) {
@@ -99,8 +159,24 @@ router.put('/:id/role', authenticateToken, async (req, res) => {
   }
 
   try {
-    await pool.query('UPDATE users SET role = $1 WHERE id = $2', [role, id]);
-    res.json({ message: 'Rol başarıyla güncellendi' });
+    // Admin can update anyone
+    if (req.user.role === 'admin') {
+      await pool.query('UPDATE users SET role = $1, client_id = $2 WHERE id = $3', [role, client_id, id]);
+      return res.json({ message: 'Rol güncellendi' });
+    }
+
+    // Client Admin can only update users in their own company
+    if (req.user.role === 'client_admin') {
+      const targetUser = await pool.query('SELECT client_id FROM users WHERE id = $1', [id]);
+      if (targetUser.rows.length === 0 || targetUser.rows[0].client_id !== req.user.client_id) {
+        return res.status(403).json({ message: 'Bu kullanıcıyı değiştiremezsiniz' });
+      }
+
+      await pool.query('UPDATE users SET role = $1 WHERE id = $2', [role, id]);
+      return res.json({ message: 'Rol güncellendi' });
+    }
+
+    return res.status(403).json({ message: 'Erişim reddedildi' });
   } catch (err) {
     console.error('Rol güncelleme hatası:', err);
     res.status(500).json({ message: 'Sunucu hatası' });

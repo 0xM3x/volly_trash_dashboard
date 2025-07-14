@@ -10,6 +10,8 @@ const deviceRoutes = require('./routes/devices');
 const logRoutes = require('./routes/logs');
 const statsRoutes = require('./routes/stats');
 const notificationRoutes = require('./routes/notifications');
+const notificationPreferencesRoutes = require('./routes/notificationPreferences');
+
 
 dotenv.config();
 
@@ -27,6 +29,7 @@ app.use('/api/devices', authenticateToken, deviceRoutes);
 app.use('/api/logs', authenticateToken, logRoutes);
 app.use('/api/stats', authenticateToken, statsRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/notification-preferences', notificationPreferencesRoutes);
 
 app.get('/', (req, res) => {
   res.send('Volly Backend Running');

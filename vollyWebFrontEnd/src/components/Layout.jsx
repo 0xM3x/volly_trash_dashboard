@@ -5,22 +5,20 @@ import {
   FiUser,
   FiCpu,
   FiLogOut,
-  FiChevronDown,
-  FiChevronUp,
 } from 'react-icons/fi';
-import { MdCircle } from 'react-icons/md';
 import { useEffect, useState } from 'react';
 import axios from '../utils/axiosInstance';
 import TopBar from './TopBar';
 
-
 export default function Layout({ children }) {
   const navigate = useNavigate();
-
-	const location = useLocation();
-	const [expanded, setExpanded] = useState(false);
-
+  const location = useLocation();
+  const [expanded, setExpanded] = useState(false);
   const [devices, setDevices] = useState([]);
+
+  // 🔐 Get role from localStorage
+  const user = JSON.parse(localStorage.getItem('user'));
+  const role = user?.role;
 
   useEffect(() => {
     axios.get('/devices')
@@ -28,8 +26,7 @@ export default function Layout({ children }) {
       .catch(() => toast.error('Cihazlar yüklenemedi.'));
   }, []);
 
-	useEffect(() => {
-    // Automatically expand if current route is a device page
+  useEffect(() => {
     if (location.pathname.startsWith('/device')) {
       setExpanded(true);
     }
@@ -42,7 +39,6 @@ export default function Layout({ children }) {
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
       <aside className="w-64 bg-white shadow-md flex flex-col">
         <div>
           <div className="p-6 text-2xl font-bold text-blue-600 flex items-center gap-2">
@@ -51,82 +47,31 @@ export default function Layout({ children }) {
           </div>
 
           <nav className="mt-4 text-sm space-y-2">
-            <NavLink
-              to="/"
-              className={({ isActive }) =>
-                `flex items-center gap-2 py-2 px-6 rounded-lg transition ${
-                  isActive
-                    ? 'bg-blue-100 text-blue-700 font-semibold'
-                    : 'text-gray-700 hover:bg-blue-100'
-                }`
-              }
-            >
-              <FiHome /> Panel
-            </NavLink>
+            <NavLink to="/" className={navLinkStyle}><FiHome /> Panel</NavLink>
+            <NavLink to="/devices" className={navLinkStyle}><FiCpu /> Cihazlar</NavLink>
 
-            {/* Cihazlar */}
-            <NavLink 
-              to="/devices" 
-              className={({ isActive }) =>
-                `flex items-center gap-2 py-2 px-6 rounded-lg transition ${
-                  isActive
-                    ? 'bg-blue-100 text-blue-700 font-semibold'
-                    : 'text-gray-700 hover:bg-blue-100'
-                }`
-              }
-            >
-              <FiCpu /> Cihazlar
-            </NavLink>
+            {/* 👇 Role-Based Visibility */}
+            {role === 'admin' && (
+              <NavLink to="/clients" className={navLinkStyle}><FiUser /> Müşteriler</NavLink>
+            )}
 
-            <NavLink
-              to="/settings"
-              className={({ isActive }) =>
-                `flex items-center gap-2 py-2 px-6 rounded-lg transition ${
-                  isActive
-                    ? 'bg-blue-100 text-blue-700 font-semibold'
-                    : 'text-gray-700 hover:bg-blue-100'
-                }`
-              }
-            >
-              <FiSettings /> Ayarlar
-            </NavLink>
-
-            <NavLink
-              to="/profile/1"
-              className={({ isActive }) =>
-                `flex items-center gap-2 py-2 px-6 rounded-lg transition ${
-                  isActive
-                    ? 'bg-blue-100 text-blue-700 font-semibold'
-                    : 'text-gray-700 hover:bg-blue-100'
-                }`
-              }
-            >
-              <FiUser /> Profil
-            </NavLink>
-						<NavLink
-						  to="/clients"
-						  className={({ isActive }) =>
-						    `flex items-center gap-2 py-2 px-6 rounded-lg transition ${
-						      isActive
-						        ? 'bg-blue-100 text-blue-700 font-semibold'
-						        : 'text-gray-700 hover:bg-blue-100'
-						    }`
-						  }
-						>
-						  <FiUser /> Müşteriler
-						</NavLink>
+            <NavLink to="/settings" className={navLinkStyle}><FiSettings /> Ayarlar</NavLink>
+            <NavLink to={`/profile/${user?.id}`} className={navLinkStyle}><FiUser /> Profil</NavLink>
           </nav>
         </div>
       </aside>
 
-      {/* Main content */}
-      {/* <main className="flex-1 p-6 overflow-y-auto">{children}</main> */}
       <main className="flex-1 flex flex-col overflow-y-auto">
         <TopBar />
         <div className="p-6 flex-1 overflow-y-auto">{children}</div>
       </main>
-
     </div>
   );
 }
 
+const navLinkStyle = ({ isActive }) =>
+  `flex items-center gap-2 py-2 px-6 rounded-lg transition ${
+    isActive
+      ? 'bg-blue-100 text-blue-700 font-semibold'
+      : 'text-gray-700 hover:bg-blue-100'
+  }`;

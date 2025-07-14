@@ -1,5 +1,3 @@
-// src/routes/notifications.js
-
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
@@ -7,7 +5,7 @@ const authenticateToken = require('../middleware/authMiddleware');
 
 const SIM_KEY = process.env.SIMULATION_API_KEY || 'your-simulation-secret';
 
-// GET /api/notifications - Get all notifications for the user
+// ✅ GET /api/notifications - Get all notifications for the user
 router.get('/', authenticateToken, async (req, res) => {
   try {
     const { id } = req.user;
@@ -22,7 +20,34 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
-// POST /api/notifications/mark-read - Mark all as read
+// ✅ GET /api/notifications/devices - List devices user can enable notifications for
+router.get('/devices', authenticateToken, async (req, res) => {
+  try {
+    const { role, client_id } = req.user;
+
+    let deviceQuery;
+    let params = [];
+
+    if (role === 'admin') {
+      // Admins can see all devices
+      deviceQuery = 'SELECT unique_id, name FROM devices ORDER BY name ASC';
+    } else if (role === 'client_admin') {
+      // Client-specific devices
+      deviceQuery = 'SELECT unique_id, name FROM devices WHERE client_id = $1 ORDER BY name ASC';
+      params = [client_id];
+    } else {
+      return res.status(403).json({ error: 'Yetkisiz erişim' });
+    }
+
+    const result = await pool.query(deviceQuery, params);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching devices for notification preferences:', err);
+    res.status(500).json({ error: 'Sunucu hatası' });
+  }
+});
+
+// ✅ POST /api/notifications/mark-read - Mark all as read
 router.post('/mark-read', authenticateToken, async (req, res) => {
   try {
     const { id } = req.user;
@@ -37,7 +62,7 @@ router.post('/mark-read', authenticateToken, async (req, res) => {
   }
 });
 
-// POST /api/notifications/send-to-device-users
+// ✅ POST /api/notifications/send-to-device-users
 router.post('/send-to-device-users', async (req, res) => {
   const apiKey = req.headers['x-api-key'];
   if (apiKey !== SIM_KEY) {
@@ -67,8 +92,7 @@ router.post('/send-to-device-users', async (req, res) => {
     );
 
     const adminsRes = await pool.query(
-      "SELECT id FROM users WHERE role = 'admin'"
-    );
+      "SELECT id FROM users WHERE role = 'admin'");
 
     const allRecipients = [...usersRes.rows, ...adminsRes.rows];
 

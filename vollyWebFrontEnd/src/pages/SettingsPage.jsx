@@ -1,186 +1,253 @@
 import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
-import toast from 'react-hot-toast';
 import axios from '../utils/axiosInstance';
-
-let storedUser = null;
-try {
-  storedUser = JSON.parse(localStorage.getItem('user')) || null;
-} catch (error) {
-  console.error('Stored user parse error:', error);
-  storedUser = null;
-}
-
+import { toast } from 'react-hot-toast';
 
 export default function SettingsPage() {
-  const [showModal, setShowModal] = useState(false);
-  const [selectedUser, setSelectedUser] = useState('');
-  const [selectedRole, setSelectedRole] = useState('');
-  const [notification, setNotification] = useState(null);
-	const [companyName, setCompanyName] = useState('Volly Teknoloji A.Ş.');
-	const [companyAddress, setCompanyAddress] = useState('İstanbul, Türkiye');
+  const user = JSON.parse(localStorage.getItem('user'));
+  const role = user?.role || '';
+  const [activeTab, setActiveTab] = useState('Versiyon');
   const [users, setUsers] = useState([]);
+  const [clientList, setClientList] = useState([]);
+  const [editedRoles, setEditedRoles] = useState({});
 
-  const handleSaveRole = () => {
-   if (!selectedUser || !selectedRole) {
-     toast.error('Lütfen kullanıcı ve rol seçin.');
-     return;
-   }
+  const [devices, setDevices] = useState([]);
+  const [selectedDevices, setSelectedDevices] = useState([]);
+  const [loadingSave, setLoadingSave] = useState(false);
+  const [notifications, setNotifications] = useState([]);
 
-   axios.put(`/users/${selectedUser}/role`, { role: selectedRole })
-     .then(() => {
-       toast.success('Yetki başarıyla güncellendi.');
-       setShowModal(false);
-       setSelectedUser('');
-       setSelectedRole('');
-     })
-     .catch(() => toast.error('Yetki güncelleme başarısız.'));
-  };
+  const tabs = role === 'client_user'
+    ? ['Versiyon']
+    : ['Versiyon', 'Rol Yönetimi', 'Bildirimler'];
 
-  const handleCompanyUpdate = () => {
-    if (!companyName) {
-      toast.error('Firma adı gerekli');
-      return;
-    }
-  
-    axios.put(`/clients/${storedUser?.client_id}`, { name: companyName })
-      .then(() => toast.success('Firma adı başarıyla güncellendi.'))
-      .catch(() => toast.error('Güncelleme başarısız.'));
-  };
-  
   useEffect(() => {
-    // Fetch Users (admin-only)
-    if (storedUser?.role === 'admin') {
+    if (role === 'admin') {
       axios.get('/users')
         .then(res => setUsers(res.data.users))
-        .catch(() => toast.error('Kullanıcılar yüklenemedi.'));
-    }
-  
-    // Fetch Company Info (admin or client_user)
-    if (storedUser?.role === 'admin' || storedUser?.role === 'client_user') {
-      axios.get(`/clients/${storedUser.client_id}`)
-        .then(res => setCompanyName(res.data.name))
-        .catch(() => toast.error('Firma bilgisi yüklenemedi.'));
-    }
-  }, []);
+        .catch(() => console.warn('Kullanıcılar alınamadı'));
 
+      axios.get('/clients')
+        .then(res => setClientList(res.data.clients))
+        .catch(() => console.warn('Firmalar alınamadı'));
+    }
+
+    if (role === 'client_admin') {
+      axios.get('/users/by-client')
+        .then(res => setUsers(res.data.users))
+        .catch(() => console.warn('Kullanıcılar alınamadı'));
+    }
+  }, [role]);
+
+  useEffect(() => {
+    if (activeTab === 'Bildirimler' && role !== 'client_user') {
+      axios.get('/notifications/devices')
+        .then(res => setDevices(res.data))
+        .catch(err => console.warn('Cihazlar alınamadı', err));
+
+      axios.get('/notification-preferences')
+        .then(res => setSelectedDevices(res.data.device_ids))
+        .catch(err => console.warn('Tercihler alınamadı', err));
+
+      axios.get('/notifications')
+        .then(res => setNotifications(res.data))
+        .catch(err => console.warn('Bildirimler alınamadı', err));
+    }
+  }, [activeTab]);
+
+  const handleRoleChange = (userId, newRole, clientId) => {
+    setEditedRoles(prev => ({
+      ...prev,
+      [userId]: {
+        ...(prev[userId] || {}),
+        role: newRole,
+        client_id: clientId,
+      },
+    }));
+  };
+
+  const handleSave = async (userId) => {
+    const updates = editedRoles[userId];
+    if (!updates) {
+      toast.error('Lütfen değişiklik yapmadan kaydetmeyin.');
+      return;
+    }
+
+    try {
+      await axios.put(`/users/${userId}/role`, updates);
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
+      setEditedRoles(prev => {
+        const updated = { ...prev };
+        delete updated[userId];
+        return updated;
+      });
+      toast.success('Rol başarıyla güncellendi');
+    } catch (err) {
+      console.error('Rol güncellenemedi', err);
+      toast.error('Rol güncellenemedi');
+    }
+  };
+
+  const toggleDevice = (deviceId) => {
+    setSelectedDevices(prev =>
+      prev.includes(deviceId)
+        ? prev.filter(id => id !== deviceId)
+        : [...prev, deviceId]
+    );
+  };
+
+  const handleSavePreferences = async () => {
+    setLoadingSave(true);
+    try {
+      await axios.post('/notification-preferences', {
+        device_ids: selectedDevices,
+      });
+      toast.success('Tercihler başarıyla kaydedildi');
+    } catch (err) {
+      toast.error('Tercihler kaydedilemedi');
+      console.error(err);
+    } finally {
+      setLoadingSave(false);
+    }
+  };
+
+  const formatDate = (datetime) => {
+    const date = new Date(datetime);
+    return date.toLocaleString('tr-TR', {
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+  };
 
   return (
     <Layout>
-      <div className="relative space-y-6 p-4">
-
-        {/* Notification */}
-        {notification && (
-          <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded shadow-md text-sm font-medium ${
-            notification.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-          }`}>
-            {notification.message}
+      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6 p-4">
+        <div className="col-span-1 bg-white rounded-xl shadow-md p-6">
+          <h1 className="text-xl font-semibold mb-4">Ayarlar</h1>
+          <div className="space-y-3">
+            {tabs.map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`w-full text-left px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  activeTab === tab ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100 text-gray-700'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
           </div>
-        )}
-
-
-        {/* Yetki Yönetimi */}
-        <div className="bg-white rounded-2xl shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Yetki Yönetimi</h3>
-          <p className="text-sm text-gray-600 mb-2">
-            Kullanıcılara roller atayın veya erişim izinlerini yönetin.
-          </p>
-          <button
-            className="bg-blue-600 text-white text-sm px-4 py-2 rounded hover:bg-blue-700"
-            onClick={() => setShowModal(true)}
-          >
-            Yetkileri Düzenle
-          </button>
         </div>
 
-        {/* Firma Ayarları */}
-        <div className="bg-white rounded-2xl shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Firma Ayarları</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Firma Adı</label>
-							<input
-							  type="text"
-							  value={companyName}
-							  onChange={(e) => setCompanyName(e.target.value)}
-							  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition shadow-sm focus:outline-none"
-							/>
+        <div className="col-span-2 bg-white rounded-xl shadow-md p-6">
+          {activeTab === 'Versiyon' && (
+            <div className="text-sm">
+              <p className="mb-2">Panel Versiyonu: <strong>v1.0.0</strong></p>
+              <p>Son Güncelleme: <strong>01.07.2025</strong></p>
             </div>
-          </div>
-					<button
-					  onClick={handleCompanyUpdate}
-					  className="mt-4 bg-blue-600 text-white text-sm px-4 py-2 rounded hover:bg-blue-700"
-					>
-					  Güncelle
-					</button>
+          )}
 
-        </div>
+          {role !== 'client_user' && activeTab === 'Bildirimler' && (
+            <div className="space-y-6 text-sm">
+              <div className="space-y-4">
+                <p className="text-gray-700">Bildirimi almak istediğiniz cihazları aşağıdan seçebilirsiniz.</p>
 
-        {/* Sistem Bilgileri */}
-        <div className="bg-white rounded-2xl shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Sistem Bilgileri</h3>
-          <ul className="text-sm text-gray-700 space-y-2">
-            <li><strong>Uygulama Versiyonu:</strong> v1.0.0</li>
-            <li><strong>Son Güncellenme:</strong> 04.05.2025</li>
-            <li><strong>Aktif Kullanıcılar:</strong> 12</li>
-          </ul>
+                {devices.length === 0 ? (
+                  <p className="text-gray-400 italic">Yükleniyor...</p>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {devices.map(device => (
+                      <label key={device.unique_id} className="flex items-center gap-2 p-2 border rounded">
+                        <input
+                          type="checkbox"
+                          checked={selectedDevices.includes(device.unique_id)}
+                          onChange={() => toggleDevice(device.unique_id)}
+                          className="accent-blue-600"
+                        />
+                        <span>{device.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                <div className="pt-4">
+                  <button
+                    onClick={handleSavePreferences}
+                    className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded"
+                    disabled={loadingSave}
+                  >
+                    {loadingSave ? 'Kaydediliyor...' : 'Tercihleri Kaydet'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="pt-6">
+                <h2 className="text-base font-semibold mb-2">Tüm Bildirimler</h2>
+                <ul className="divide-y text-sm">
+                  {notifications.map(n => (
+                    <li key={n.id} className="py-2">
+                      <p className="text-gray-800">{n.message}</p>
+                      <p className="text-gray-500 text-xs">{formatDate(n.created_at)}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'Rol Yönetimi' && role !== 'client_user' && (
+            <div className="space-y-4">
+              {users
+                .filter(u => role === 'admin' || u.client_id === user.client_id)
+                .map(u => (
+                  <div key={u.id} className="border border-gray-200 rounded-lg p-4">
+                    <p className="font-medium">{u.name} ({u.email})</p>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
+                      <select
+                        value={editedRoles[u.id]?.role || u.role}
+                        onChange={e => handleRoleChange(u.id, e.target.value, editedRoles[u.id]?.client_id || u.client_id)}
+                        className="border rounded px-2 py-1"
+                      >
+                        {role === 'admin' && (
+                          <>
+                            <option value="admin">Yönetici</option>
+                            <option value="client_admin">Müşteri Yöneticisi</option>
+                            <option value="client_user">Kullanıcı</option>
+                          </>
+                        )}
+                        {role === 'client_admin' && (
+                          <>
+                            <option value="client_admin">Müşteri Yöneticisi</option>
+                            <option value="client_user">Kullanıcı</option>
+                          </>
+                        )}
+                      </select>
+
+                      {role === 'admin' && (
+                        <select
+                          value={editedRoles[u.id]?.client_id || u.client_id || ''}
+                          onChange={e => handleRoleChange(u.id, editedRoles[u.id]?.role || u.role, e.target.value)}
+                          className="border rounded px-2 py-1"
+                        >
+                          <option value="">Firma Yok</option>
+                          {clientList.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                          ))}
+                        </select>
+                      )}
+
+                      <button
+                        onClick={() => handleSave(u.id)}
+                        className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-3 py-1 rounded"
+                      >
+                        Kaydet
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-gray-800/40 z-50 flex items-center justify-center">
-          <div className="bg-white w-full max-w-md rounded-xl p-6 shadow-lg space-y-4">
-            <h3 className="text-lg font-semibold text-gray-800">Yetki Düzenle</h3>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Kullanıcı Seç</label>
-              <select
-                value={selectedUser}
-                onChange={(e) => setSelectedUser(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition shadow-sm focus:outline-none"
-              >
-                <option value="">Seçiniz</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Rol Seç</label>
-              <select
-                value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition shadow-sm focus:outline-none"
-              >
-                <option value="">Seçiniz</option>
-                <option value="admin">Yönetici</option>
-                <option value="client">Firma</option>
-                <option value="user">Kullanıcı</option>
-              </select>
-            </div>
-
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-sm px-4 py-2 rounded border border-gray-300 hover:bg-gray-100"
-              >
-                İptal
-              </button>
-              <button
-                onClick={handleSaveRole}
-                className="text-sm px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
-              >
-                Kaydet
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </Layout>
   );
 }
-
