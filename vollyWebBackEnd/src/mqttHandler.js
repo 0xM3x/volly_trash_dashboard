@@ -53,7 +53,7 @@ function setupMQTT(io) {
         }
 
         const deviceResult = await pool.query(
-          'SELECT id, client_id, unique_id FROM devices WHERE unique_id = $1',
+          'SELECT id, client_id, unique_id, name FROM devices WHERE unique_id = $1',
           [device_id]
         );
 
@@ -62,7 +62,7 @@ function setupMQTT(io) {
           return;
         }
 
-        const { id: dbDeviceId, client_id: clientId, unique_id } = deviceResult.rows[0];
+        const { id: dbDeviceId, client_id: clientId, unique_id, name } = deviceResult.rows[0];
 
         let newStatus = null;
         if (event === 'full' || event === 'gas_alert') {
@@ -80,8 +80,8 @@ function setupMQTT(io) {
         }
 
         const usersResult = await pool.query(
-          'SELECT id FROM users WHERE client_id = $1',
-          [clientId]
+          'SELECT id FROM users WHERE client_id = $1 OR role = $2',
+          [clientId, 'admin']
         );
 
         const finalMessage = msg || generateDefaultMessage(event, window_open);
@@ -90,18 +90,19 @@ function setupMQTT(io) {
           await pool.query(`
             INSERT INTO notifications (user_id, message, device_id)
             VALUES ($1, $2, $3)
-          `, [user.id, finalMessage, device_id]);
+          `, [user.id, finalMessage, dbDeviceId]);
 
           io.to(user.id.toString()).emit('notification', {
             message: finalMessage,
             type: event,
             unique_id,
+            client_id: clientId,
+            name,
             created_at: new Date(),
           });
         }
 
-        io.emit('notification', { device_id, type: event });
-        console.log(`📤 Notification + device-status-update for ${device_id}: ${newStatus}`);
+        console.log(`📤 Notification emitted to ${usersResult.rowCount} users for device ${device_id}`);
       }
 
     } catch (err) {

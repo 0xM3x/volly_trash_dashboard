@@ -175,7 +175,7 @@ const TopBar = ({ hideNotifications = false }) => {
                    )}
                  </ul>
                  <div
-                   onClick={() => setShowAll(true)}
+                   onClick={() => navigate('/settings', { state: { openNotificationTab: true } })}
                    className="px-4 py-2 text-center text-sm text-blue-600 hover:scale-105 transition-transform cursor-pointer"
                  >
                    Tüm Bildirimleri Gör

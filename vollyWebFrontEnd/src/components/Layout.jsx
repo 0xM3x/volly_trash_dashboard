@@ -9,6 +9,8 @@ import {
 import { useEffect, useState } from 'react';
 import axios from '../utils/axiosInstance';
 import TopBar from './TopBar';
+import socket from '../utils/socket';
+import { toast } from 'react-hot-toast';
 
 export default function Layout({ children }) {
   const navigate = useNavigate();
@@ -16,7 +18,6 @@ export default function Layout({ children }) {
   const [expanded, setExpanded] = useState(false);
   const [devices, setDevices] = useState([]);
 
-  // 🔐 Get role from localStorage
   const user = JSON.parse(localStorage.getItem('user'));
   const role = user?.role;
 
@@ -37,6 +38,45 @@ export default function Layout({ children }) {
     navigate('/login');
   };
 
+  useEffect(() => {
+    if (user?.id) {
+      socket.emit('register', user.id.toString());
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    const relevantEvents = ['full', 'empty', 'press_active', 'gas_alert', 'door_open', 'window_open'];
+
+    const eventMessages = {
+      full: 'doldu',
+      empty: 'boşaltıldı',
+      press_active: 'presleme başladı',
+      gas_alert: 'gaz seviyesi yüksek',
+      door_open: 'kapak açıldı',
+      window_open: 'pencere açıldı',
+    };
+
+    const handleNotification = (payload) => {
+      const currentUser = JSON.parse(localStorage.getItem('user'));
+      const isAdmin = currentUser?.role === 'admin';
+
+      if (!payload || !relevantEvents.includes(payload.type)) return;
+      if (!isAdmin && payload.client_id !== currentUser?.client_id) return;
+
+      const eventText = eventMessages[payload.type] || payload.type;
+      const deviceName = payload.name || `Cihaz ${payload.unique_id}`;
+
+      toast.custom(() => (
+        <div className="bg-white border-l-4 border-blue-600 shadow-lg px-4 py-2 rounded text-sm text-gray-800">
+          🔔 <strong>{deviceName}</strong> şu anda <strong>{eventText}</strong>.
+        </div>
+      ));
+    };
+
+    socket.on('notification', handleNotification);
+    return () => socket.off('notification', handleNotification);
+  }, []);
+
   return (
     <div className="flex h-screen bg-gray-100">
       <aside className="w-64 bg-white shadow-md flex flex-col">
@@ -50,7 +90,6 @@ export default function Layout({ children }) {
             <NavLink to="/" className={navLinkStyle}><FiHome /> Panel</NavLink>
             <NavLink to="/devices" className={navLinkStyle}><FiCpu /> Cihazlar</NavLink>
 
-            {/* 👇 Role-Based Visibility */}
             {role === 'admin' && (
               <NavLink to="/clients" className={navLinkStyle}><FiUser /> Müşteriler</NavLink>
             )}

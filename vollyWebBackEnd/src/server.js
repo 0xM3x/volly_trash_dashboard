@@ -50,8 +50,15 @@ const { Server } = require('socket.io');
 const setupMQTT = require('./mqttHandler');
 
 const server = http.createServer(app);
+// const io = new Server(server, {
+//   cors: { origin: '*' },
+// });
 const io = new Server(server, {
-  cors: { origin: '*' },
+  cors: {
+    origin: 'http://localhost:5173', // ✅ must be exact
+    methods: ['GET', 'POST'],
+    credentials: true, // ✅ allow credentials
+  },
 });
 
 app.set('io', io); // 🔥 Make socket instance available to routes

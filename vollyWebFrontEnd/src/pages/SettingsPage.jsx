@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
 import axios from '../utils/axiosInstance';
 import { toast } from 'react-hot-toast';
+import socket from '../utils/socket';
 
 export default function SettingsPage() {
   const user = JSON.parse(localStorage.getItem('user'));
   const role = user?.role || '';
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState('Versiyon');
   const [users, setUsers] = useState([]);
   const [clientList, setClientList] = useState([]);
   const [editedRoles, setEditedRoles] = useState({});
-
   const [devices, setDevices] = useState([]);
   const [selectedDevices, setSelectedDevices] = useState([]);
   const [loadingSave, setLoadingSave] = useState(false);
@@ -19,6 +21,18 @@ export default function SettingsPage() {
   const tabs = role === 'client_user'
     ? ['Versiyon']
     : ['Versiyon', 'Rol Yönetimi', 'Bildirimler'];
+
+  useEffect(() => {
+    if (user?.id) {
+      socket.emit('join', user.id.toString());
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (location.state?.openNotificationTab) {
+      setActiveTab('Bildirimler');
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (role === 'admin') {
@@ -53,6 +67,37 @@ export default function SettingsPage() {
         .catch(err => console.warn('Bildirimler alınamadı', err));
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    const relevantEvents = ['full', 'empty', 'press_active', 'gas_alert', 'door_open', 'window_open'];
+
+    const eventMessages = {
+      full: 'doldu',
+      empty: 'boşaltıldı',
+      press_active: 'presleme başladı',
+      gas_alert: 'gaz seviyesi yüksek',
+      door_open: 'kapak açıldı',
+      window_open: 'pencere açıldı',
+    };
+
+    const handleNotification = (payload) => {
+      if (
+        payload &&
+        relevantEvents.includes(payload.type) &&
+        selectedDevices.includes(payload.unique_id)
+      ) {
+        const statusText = eventMessages[payload.type] || payload.type;
+        toast.custom(() => (
+          <div className="bg-white border-l-4 border-blue-600 shadow-lg px-4 py-2 rounded text-sm text-gray-800">
+            🔔 Cihaz <strong>{payload.name || payload.unique_id}</strong> şu anda {statusText}.
+          </div>
+        ));
+      }
+    };
+
+    socket.on('notification', handleNotification);
+    return () => socket.off('notification', handleNotification);
+  }, [selectedDevices]);
 
   const handleRoleChange = (userId, newRole, clientId) => {
     setEditedRoles(prev => ({
