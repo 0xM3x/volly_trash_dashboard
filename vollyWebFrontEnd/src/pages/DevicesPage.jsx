@@ -173,10 +173,10 @@ export default function DevicePage() {
                     />
 
                     <div className="h-64">
-                      <MapContainer center={[41.015, 28.979]} zoom={13} className="h-full w-full rounded">
+                      <MapContainer center={[41.015, 28.979]} zoom={13} scrollWheelZoom={true} className="h-full w-full rounded">
                         <TileLayer
-                          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-                          attribution='&copy; <a href="https://carto.com/">Carto</a>'
+                          attribution='&copy; OpenStreetMap contributors'
+                          url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
                         />
                         <LocationPicker
                           onSelect={({ lat, lng }) => setNewDevice({ ...newDevice, latitude: lat.toFixed(6), longitude: lng.toFixed(6) })}
