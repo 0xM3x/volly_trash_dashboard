@@ -125,9 +125,18 @@ export default function DevicePage() {
                 <h3 className="text-lg font-semibold text-blue-600">{device.name}</h3>
                 <p className="text-sm text-gray-600">MAC: {device.board_mac}</p>
                 <p className="text-sm text-gray-500">ID: {device.unique_id}</p>
-                <p className={`inline-block mt-1 px-2 py-1 text-xs rounded ${device.status === 'online' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-                  {device.status === 'online' ? 'Çevrimiçi' : 'Çevrimdışı'}
+                <p className={`inline-block mt-1 px-2 py-1 text-xs rounded
+                  ${device.status === 'online' && 'bg-green-100 text-green-700'}
+                  ${device.status === 'offline' && 'bg-red-100 text-red-600'}
+                  ${device.status === 'out_of_service' && 'bg-yellow-100 text-yellow-800'}
+                `}>
+                  {device.status === 'online'
+                    ? 'Çevrimiçi'
+                    : device.status === 'out_of_service'
+                    ? 'Servis Dışı'
+                    : 'Çevrimdışı'}
                 </p>
+
               </div>
             ))}
           </div>
