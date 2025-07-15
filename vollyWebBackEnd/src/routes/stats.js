@@ -11,10 +11,12 @@ router.get('/summary', authenticateToken, async (req, res) => {
 
     let baseQuery = 'SELECT status, COUNT(*) FROM devices';
     const params = [];
+
     if (role !== 'admin') {
       baseQuery += ' WHERE client_id = $1';
       params.push(client_id);
     }
+
     baseQuery += ' GROUP BY status';
 
     const result = await pool.query(baseQuery, params);
@@ -44,19 +46,22 @@ router.get('/summary', authenticateToken, async (req, res) => {
 router.get('/fill-graph', authenticateToken, async (req, res) => {
   try {
     const { role, client_id } = req.user;
+
     const deviceQuery = role === 'admin'
-      ? 'SELECT unique_id, name FROM devices'
-      : 'SELECT unique_id, name FROM devices WHERE client_id = $1';
+      ? 'SELECT id, name FROM devices'
+      : 'SELECT id, name FROM devices WHERE client_id = $1';
+
     const devices = await pool.query(deviceQuery, role === 'admin' ? [] : [client_id]);
 
     const deviceMap = {};
     const allowedIds = [];
-    devices.rows.forEach(d => {
-      deviceMap[d.unique_id] = d.name;
-      allowedIds.push(d.unique_id);
-    });
-    console.log('[FILL-GRAPH] Allowed device IDs:', allowedIds);
 
+    devices.rows.forEach(d => {
+      deviceMap[d.id] = d.name;
+      allowedIds.push(d.id);
+    });
+
+    console.log('[FILL-GRAPH] Allowed device IDs:', allowedIds);
 
     if (allowedIds.length === 0) {
       return res.json({ days: [], counts: [], mostFilled: null, leastFilled: null });
@@ -67,7 +72,7 @@ router.get('/fill-graph', authenticateToken, async (req, res) => {
        FROM sensor_logs
        WHERE timestamp >= NOW() - INTERVAL '7 days'
        AND distance <= 25
-       AND device_id = ANY($1::text[])`,
+       AND device_id = ANY($1::int[])`,
       [allowedIds]
     );
 
@@ -95,8 +100,14 @@ router.get('/fill-graph', authenticateToken, async (req, res) => {
     res.json({
       days,
       counts,
-      mostFilled: { name: deviceMap[mostFilled[0]] || mostFilled[0], count: mostFilled[1] },
-      leastFilled: { name: deviceMap[leastFilled[0]] || leastFilled[0], count: leastFilled[1] },
+      mostFilled: {
+        name: deviceMap[mostFilled[0]] || mostFilled[0],
+        count: mostFilled[1],
+      },
+      leastFilled: {
+        name: deviceMap[leastFilled[0]] || leastFilled[0],
+        count: leastFilled[1],
+      },
     });
   } catch (err) {
     console.error('Fill graph stats error:', err);
@@ -109,15 +120,15 @@ router.get('/latest-status', authenticateToken, async (req, res) => {
   try {
     const { role, client_id } = req.user;
     const deviceQuery = role === 'admin'
-      ? 'SELECT unique_id, name FROM devices'
-      : 'SELECT unique_id, name FROM devices WHERE client_id = $1';
+      ? 'SELECT id, unique_id, name FROM devices'
+      : 'SELECT id, unique_id, name FROM devices WHERE client_id = $1';
     const devices = await pool.query(deviceQuery, role === 'admin' ? [] : [client_id]);
 
     const deviceMap = {};
     const allowedIds = [];
     devices.rows.forEach(d => {
-      deviceMap[d.unique_id] = d.name;
-      allowedIds.push(d.unique_id);
+      deviceMap[d.id] = { unique_id: d.unique_id, name: d.name };
+      allowedIds.push(d.id);
     });
     console.log('[LATEST-STATUS] Allowed device IDs:', allowedIds);
 
@@ -126,16 +137,21 @@ router.get('/latest-status', authenticateToken, async (req, res) => {
     const logs = await pool.query(
       `SELECT DISTINCT ON (device_id) device_id, distance
        FROM sensor_logs
-       WHERE device_id = ANY($1::text[])
+       WHERE device_id = ANY($1::int[])
        ORDER BY device_id, timestamp DESC`,
       [allowedIds]
     );
 
-    const enriched = logs.rows.map(log => ({
-      unique_id: log.device_id,
-      name: deviceMap[log.device_id] || log.device_id,
-      distance: log.distance,
-    }));
+    console.log('[LATEST-STATUS] Queried logs:', logs.rows);
+
+    const enriched = logs.rows
+      .filter(log => deviceMap[log.device_id])
+      .map(log => ({
+        id: log.device_id,
+        unique_id: deviceMap[log.device_id]?.unique_id || null,
+        name: deviceMap[log.device_id]?.name || 'Unknown',
+        distance: log.distance,
+      }));
 
     res.json(enriched);
   } catch (err) {

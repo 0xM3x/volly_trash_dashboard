@@ -25,6 +25,7 @@ function LocationPicker({ onSelect }) {
 
 export default function DevicePage() {
   const [devices, setDevices] = useState([]);
+  const [clientList, setClientList] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isAdmin, setIsAdmin] = useState(false);
@@ -48,9 +49,16 @@ export default function DevicePage() {
       .catch(() => toast.error('Kullanıcı bilgisi alınamadı.'));
   };
 
+  const fetchClients = () => {
+    axios.get('/clients')
+      .then(res => setClientList(res.data.clients))
+      .catch(() => toast.error('Firmalar alınamadı.'));
+  };
+
   useEffect(() => {
     fetchDevices();
     fetchUserRole();
+    fetchClients();
   }, []);
 
   const filteredDevices = devices.filter(device => {
@@ -173,13 +181,17 @@ export default function DevicePage() {
                       onChange={(e) => setNewDevice({ ...newDevice, board_mac: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200"
                     />
-                    <input
-                      type="text"
-                      placeholder="Client ID"
+
+                    <select
                       value={newDevice.client_id}
                       onChange={(e) => setNewDevice({ ...newDevice, client_id: e.target.value })}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition duration-200"
-                    />
+                    >
+                      <option value="">Firma Seçin</option>
+                      {clientList.map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
 
                     <div className="h-64">
                       <MapContainer center={[41.015, 28.979]} zoom={13} scrollWheelZoom={true} className="h-full w-full rounded">

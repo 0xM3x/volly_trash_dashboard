@@ -38,28 +38,37 @@ router.post('/', authenticateToken, async (req, res) => {
     return res.status(400).json({ message: 'Tüm alanlar zorunludur' });
   }
 
+  const parsedClientId = parseInt(client_id);
+  if (isNaN(parsedClientId)) {
+    return res.status(400).json({ message: 'Geçersiz firma ID' });
+  }
+
   try {
+    // Check for duplicate MAC
     const macCheck = await pool.query('SELECT 1 FROM devices WHERE board_mac = $1', [board_mac]);
     if (macCheck.rowCount > 0) {
       return res.status(400).json({ message: 'Bu kart zaten kayıtlı' });
     }
 
-    const lastDevice = await pool.query(
-      'SELECT unique_id FROM devices WHERE client_id = $1 ORDER BY unique_id DESC LIMIT 1',
-      [client_id]
+    // Get all used unique_ids for this client
+    const existingIdsResult = await pool.query(
+      'SELECT unique_id FROM devices',
     );
+    const usedIds = existingIdsResult.rows.map(row => parseInt(row.unique_id, 16));
 
-    let nextId = '001';
-    if (lastDevice.rows.length > 0) {
-      const lastHex = parseInt(lastDevice.rows[0].unique_id, 16);
-      nextId = (lastHex + 1).toString(16).padStart(3, '0').toUpperCase();
+    // Generate the next unused unique_id
+    let nextHex = 1;
+    while (usedIds.includes(nextHex)) {
+      nextHex++;
     }
+    const nextId = nextHex.toString(16).padStart(3, '0').toUpperCase(); // e.g., 002, 00A
 
+    // Insert the new device
     const result = await pool.query(
-       `INSERT INTO devices (name, unique_id, board_mac, client_id, latitude, longitude)
-        VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO devices (name, unique_id, board_mac, client_id, latitude, longitude)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id, name, unique_id, board_mac, status, client_id, latitude, longitude, created_at`,
-      [name, nextId, board_mac, client_id, latitude, longitude]
+      [name, nextId, board_mac, parsedClientId, latitude, longitude]
     );
 
     res.status(201).json({ device: result.rows[0] });

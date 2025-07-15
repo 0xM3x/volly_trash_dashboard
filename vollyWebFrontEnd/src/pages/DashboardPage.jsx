@@ -203,8 +203,8 @@ export default function DashboardPage() {
           <p>Cihaz verisi bulunamadı.</p>
         ) : (
           <div className="space-y-4">
-            {capacityData.map((device, i) => (
-              <div key={i} className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+            {capacityData.map((device) => (
+              <div key={device.id} className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                 <p className="font-medium w-full md:w-1/3">{device.name || device.unique_id}</p>
                 <div className="relative w-full md:w-2/3 bg-gray-200 rounded-full h-5 overflow-hidden">
                   <div

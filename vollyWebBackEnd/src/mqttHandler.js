@@ -22,15 +22,17 @@ function setupMQTT(io) {
 
       if (topic === 'trash/sensors') {
         const result = await pool.query(
-          'SELECT 1 FROM devices WHERE unique_id = $1',
+          'SELECT id FROM devices WHERE unique_id = $1',
           [data.id]
         );
 
         if (result.rowCount > 0) {
+          const dbDeviceId = result.rows[0].id;
+
           await pool.query(`
             INSERT INTO sensor_logs (device_id, distance, gas, temperature, current)
             VALUES ($1, $2, $3, $4, $5)
-          `, [data.id, data.distance, data.gas, data.temperature, data.current]);
+          `, [dbDeviceId, data.distance, data.gas, data.temperature, data.current]);
 
           await pool.query(`
             UPDATE devices SET status = 'online', last_seen = NOW()
