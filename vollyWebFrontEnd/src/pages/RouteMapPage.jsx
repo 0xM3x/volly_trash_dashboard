@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import axios from 'axios';
 import TopBar from '../components/TopBar';
 import { io } from 'socket.io-client';
-import userIconImg from '../assets/userLocation.png';
-import deviceIconImg from '../assets/deviceLocation.png';
+import userIconImg from '../assets/green-marker.png';
+import deviceIconImg from '../assets/red-marker.png';
+import toast from 'react-hot-toast';
 
 const userIcon = new L.Icon({
   iconUrl: userIconImg,
@@ -30,20 +31,28 @@ export default function RouteMapPage() {
   const [route, setRoute] = useState(null);
   const [user, setUser] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
+  const mapRef = useRef();
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
     setUser(storedUser);
+    if (storedUser?.id) {
+      socket.emit('register', storedUser.id.toString());
+      console.log('[📡] Registered user for socket notifications:', storedUser.id);
+    }
   }, []);
 
-  const updateMarkers = async () => {
+  const updateMarkers = async (alsoUpdateRoute = false) => {
     try {
       const token = localStorage.getItem('token');
       const res = await axios.get('http://localhost:8000/api/devices/map', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      const devicesWithCoords = (res.data.devices || []).filter(d =>
+      const user = JSON.parse(localStorage.getItem('user'));
+      const isClientUser = user?.role === 'client_user';
+
+      const devices = (res.data.devices || []).filter(d =>
         d.latitude && d.longitude
       ).map(d => ({
         ...d,
@@ -51,28 +60,42 @@ export default function RouteMapPage() {
         longitude: parseFloat(d.longitude)
       }));
 
-      setAllDevices(devicesWithCoords);
+      let fullDevices = [];
+      if (isClientUser) {
+        fullDevices = devices.filter(d => d.status === 'out_of_service');
+        setAllDevices(fullDevices);
+      } else {
+        setAllDevices(devices);
+        fullDevices = devices.filter(d => d.status === 'out_of_service');
+      }
+      setFullBins(fullDevices);
+
+      if (alsoUpdateRoute && fullDevices.length > 0 && userLocation) {
+        const response = await axios.post(
+          'http://localhost:8000/api/devices/route',
+          { start: { lat: userLocation[0], lng: userLocation[1] } },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setRoute(response.data.route);
+      } else if (alsoUpdateRoute) {
+        setRoute(null);
+      }
     } catch (err) {
-      console.error('Cihazlar yüklenemedi:', err);
+      console.error('Cihazlar veya rota güncellenemedi:', err);
     }
   };
 
   const handleOptimizeRoute = async () => {
     if (!userLocation) {
-      alert('Konum alınamadı, lütfen konum izinlerini kontrol edin.');
+      toast.error('Konum alınamadı, lütfen konum izinlerini kontrol edin.');
       return;
     }
-
-    const start = {
-      lat: userLocation[0],
-      lng: userLocation[1]
-    };
 
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
         'http://localhost:8000/api/devices/route',
-        { start },
+        { start: { lat: userLocation[0], lng: userLocation[1] } },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -80,42 +103,41 @@ export default function RouteMapPage() {
         }
       );
 
+      if (!response.data.devices || response.data.devices.length === 0) {
+        toast.error('Toplanacak dolu çöp kutusu bulunamadı.');
+        setRoute(null);
+        return;
+      }
+
       setRoute(response.data.route);
-      setFullBins(response.data.devices);
+
+      if (mapRef.current) {
+        const bounds = L.latLngBounds(
+          response.data.devices.map(d => [d.latitude, d.longitude])
+        );
+        mapRef.current.fitBounds(bounds);
+      }
     } catch (err) {
       console.error('Rota oluşturulamadı:', err);
-      alert('Rota oluşturulamadı. Bir hata oluştu.');
+      toast.error('Rota oluşturulamadı.');
+      setRoute(null);
     }
   };
 
   useEffect(() => {
     updateMarkers();
-  }, []);
+  }, [userLocation]);
 
   useEffect(() => {
     socket.on('notification', (data) => {
-      if (data.device_id) {
-        console.log('[📡] notification received:', data);
-        updateMarkers();
-      
-        if (data.type === 'full' || data.type === 'empty') {
-          handleOptimizeRoute();
-        }
+      if (data.unique_id && ['full', 'empty'].includes(data.type)) {
+        updateMarkers(true);
+        console.log('[📥] Notification received (will update markers and route):', data);
       }
-    });
-
-    socket.on('sensor-data', (data) => {
-      console.log('[📡] sensor-data received:', data);
-      setAllDevices(prev =>
-        prev.map(d =>
-          d.unique_id === data.id ? { ...d } : d
-        )
-      );
     });
 
     return () => {
       socket.off('notification');
-      socket.off('sensor-data');
     };
   }, [userLocation]);
 
@@ -144,7 +166,13 @@ export default function RouteMapPage() {
     <>
       {user && <TopBar hideNotifications={user.role === 'client_user'} />}
       <div className="relative h-[calc(100vh-64px)] w-full">
-        <MapContainer center={mapCenter} zoom={14} scrollWheelZoom className="h-full w-full z-0">
+        <MapContainer
+          center={mapCenter}
+          zoom={14}
+          scrollWheelZoom
+          className="h-full w-full z-0"
+          whenCreated={mapInstance => (mapRef.current = mapInstance)}
+        >
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             attribution="&copy; OpenStreetMap contributors"
@@ -177,7 +205,10 @@ export default function RouteMapPage() {
         </MapContainer>
 
         <button
-          className="bg-green-600 text-white px-4 py-2 rounded absolute bottom-4 right-4 z-[1000] shadow-lg"
+          className={`px-4 py-2 rounded absolute bottom-4 right-4 z-[1000] shadow-lg 
+            ${fullBins.length === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700 text-white'}
+          `}
+          disabled={fullBins.length === 0}
           onClick={handleOptimizeRoute}
         >
           Çöp Topla
