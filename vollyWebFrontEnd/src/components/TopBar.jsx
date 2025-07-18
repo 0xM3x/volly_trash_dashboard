@@ -13,7 +13,7 @@ import {
   FiInfo
 } from 'react-icons/fi';
 
-const socket = io('http://localhost:8000');
+const socket = io('http://localhost:8000', { autoConnect: false });
 
 const TopBar = ({ hideNotifications = false }) => {
   const location = useLocation();
@@ -30,12 +30,42 @@ const TopBar = ({ hideNotifications = false }) => {
   const modalRef = useRef(null);
   const prevNotifOpen = useRef(notifOpen);
 
+  const unreadCount = notifications.filter(n => !n.is_read).length;
+
+
+ // useEffect(() => {
+ //   const storedUser = JSON.parse(localStorage.getItem('user'));
+ //   if (storedUser) {
+ //     setUser(storedUser);
+ //     socket.emit('register', storedUser.id);
+
+ //     axios.get('/users/me')
+ //       .then(res => {
+ //         setUser(prev => ({ ...prev, client_name: res.data.client_name }));
+ //       })
+ //       .catch(() => console.warn('Firma adı alınamadı'));
+ //   }
+ // }, []);
+
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user'));
     if (storedUser) {
       setUser(storedUser);
-      socket.emit('register', storedUser.id);
 
+      // ✅ 1. Connect manually
+      socket.connect();
+
+      // ✅ 2. Only register after socket is connected
+      socket.on('connect', () => {
+        socket.emit('register', storedUser.id);
+      });
+
+      // ✅ 3. (Optional) Handle reconnect
+      socket.on('disconnect', () => {
+        console.warn('🔌 WebSocket disconnected');
+      });
+
+      // ✅ 4. Get company name (just cosmetic)
       axios.get('/users/me')
         .then(res => {
           setUser(prev => ({ ...prev, client_name: res.data.client_name }));
@@ -43,6 +73,7 @@ const TopBar = ({ hideNotifications = false }) => {
         .catch(() => console.warn('Firma adı alınamadı'));
     }
   }, []);
+
 
   useEffect(() => {
     if (!user?.id) return;
@@ -62,9 +93,11 @@ const TopBar = ({ hideNotifications = false }) => {
   useEffect(() => {
     socket.on('notification', (newNotif) => {
       if (newNotif.user_id !== user.id) return;
+
+
       setNotifications(prev => {
         const exists = prev.some(
-          n => n.message === newNotif.message && n.created_at === newNotif.created_at
+          n => n.message === newNotif.message && n.created_at === newNotif.created_at && n.device_id === newNotif.device_id
         );
         return exists ? prev : [newNotif, ...prev];
       });
@@ -138,110 +171,120 @@ const TopBar = ({ hideNotifications = false }) => {
 
   return (
     <>
-      <div className="bg-white shadow-sm px-6 py-4 flex justify-between items-center border-b border-gray-200">
-        <h1 className="text-xl font-bold text-blue-600 tracking-tight">{getPageTitle(location.pathname)}</h1>
+      <div className="bg-white shadow-sm px-4 py-3 border-b border-gray-200">
+        <div className="flex justify-between items-center">
+          {/* Page title - hidden on mobile */}
+          <h1 className="text-xl font-bold text-blue-600 tracking-tight">
+            {getPageTitle(location.pathname)}
+          </h1>
 
-        <div className="flex items-center gap-4">
-          {!hideNotifications && (
-            <div className="relative" ref={notifRef}>
-             <button
-               onClick={handleNotificationClick}
-               className="relative text-gray-500 hover:text-blue-600"
-             >
-               <FiBell className="text-xl" />
-               {notifications.filter(n => !n.is_read).length > 0 && (
-                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1">
-                   {notifications.filter(n => !n.is_read).length}
-                 </span>
-               )}
-             </button>
-             {notifOpen && (
-               <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg z-50 text-sm overflow-hidden ring-1 ring-gray-200">
-                 <div className="px-4 py-3 font-semibold bg-gray-50 text-gray-700 border-b border-gray-100">
-                   Bildirimler
-                 </div>
-                 <ul className="max-h-64 overflow-y-auto divide-y divide-gray-100">
-                   {notifications.filter(n => !n.is_read).length > 0 ? (
-                     notifications.filter(n => !n.is_read).map((note, idx) => (
-                       <li
-                         key={idx}
-                         className="px-4 py-3 cursor-pointer text-gray-700 hover:bg-blue-50 font-semibold"
-                       >
-                         • {note.message}
-                       </li>
-                     ))
-                   ) : (
-                     <li className="px-4 py-3 text-gray-500">Yeni bildirim yok</li>
-                   )}
-                 </ul>
-                 <div
-                   onClick={() => navigate('/settings', { state: { openNotificationTab: true } })}
-                   className="px-4 py-2 text-center text-sm text-blue-600 hover:scale-105 transition-transform cursor-pointer"
-                 >
-                   Tüm Bildirimleri Gör
-                 </div>
-               </div>
-             )}
-          </div> 
-          )}
-
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setDropdownOpen((prev) => !prev)}
-              className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg text-sm text-gray-700"
-            >
-              <div className="w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
-                {getInitials(user.name)}
-              </div>
-              <span>{user.name || 'Kullanıcı'}</span>
-              <FiChevronDown className="text-xs" />
-            </button>
-
-            {dropdownOpen && (
-              <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg z-50 text-sm overflow-hidden ring-1 ring-gray-200">
-                <div className="px-4 py-3 bg-gray-50">
-                  <p className="font-semibold flex items-center gap-2 text-blue-700">
-                    <FiUser /> {user.name}
-                  </p>
-                  <p className="text-gray-600 flex items-center gap-2 mt-1">
-                    <FiShield /> {roleLabel}
-                  </p>
-                  {user.role !== 'admin' && (
-                    <p className="text-gray-600 flex items-center gap-2 mt-1">
-                      <FiHome /> Firma: {user.client_name || 'Bilinmiyor'}
-                    </p>
+          {/* Right-side: Notifications and User */}
+          <div className="flex items-center gap-4 ml-auto">
+            {!hideNotifications && (
+              <div className="relative" ref={notifRef}>
+                <button
+                  onClick={handleNotificationClick}
+                  className="relative text-gray-500 hover:text-blue-600"
+                >
+                  <FiBell className="text-xl" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1">
+                      {unreadCount}
+                    </span>
                   )}
-                </div>
-                <div className="flex flex-col divide-y divide-gray-100">
-                  <button
-                    onClick={() => navigate(`/profile/${user.id}`)}
-                    className="w-full text-left px-4 py-3 hover:bg-gray-100 flex items-center gap-2"
-                  >
-                    <FiInfo /> Profilim
-                  </button>
-                  <button
-                    onClick={() => navigate('/settings')}
-                    className="w-full text-left px-4 py-3 hover:bg-gray-100 flex items-center gap-2"
-                  >
-                    <FiSettings /> Ayarlar
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full text-left px-4 py-3 text-red-600 hover:bg-gray-100 flex items-center gap-2"
-                  >
-                    <FiLogOut /> Çıkış Yap
-                  </button>
-                </div>
+                </button>
+                {notifOpen && (
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg z-50 text-sm overflow-hidden ring-1 ring-gray-200 translate-x-[10px] sm:translate-x-0">
+                    <div className="px-4 py-3 font-semibold bg-gray-50 text-gray-700 border-b border-gray-100">
+                      Bildirimler
+                    </div>
+                    <ul className="max-h-64 overflow-y-auto divide-y divide-gray-100">
+                      {notifications.filter(n => !n.is_read).length > 0 ? (
+                        notifications.filter(n => !n.is_read).map((note, idx) => (
+                          <li
+                            key={idx}
+                            className="px-4 py-3 cursor-pointer text-gray-700 hover:bg-blue-50 font-semibold"
+                          >
+                            {/* • {note.message} */}
+                            • {(note.device_name || 'Bilinmeyen cihaz')} ({note.device_id || '??'}) : {note.message}
+                          </li>
+                        ))
+                      ) : (
+                        <li className="px-4 py-3 text-gray-500">Yeni bildirim yok</li>
+                      )}
+                    </ul>
+                    <div
+                      onClick={() => navigate('/settings', { state: { openNotificationTab: true } })}
+                      className="px-4 py-2 text-center text-sm text-blue-600 hover:scale-105 transition-transform cursor-pointer"
+                    >
+                      Tüm Bildirimleri Gör
+                    </div>
+                  </div>
+                )}
               </div>
             )}
+
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setDropdownOpen((prev) => !prev)}
+                className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded-lg text-sm text-gray-700"
+              >
+                <div className="w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
+                  {getInitials(user.name)}
+                </div>
+                <span className="hidden sm:block">{user.name || 'Kullanıcı'}</span>
+                <FiChevronDown className="text-xs" />
+              </button>
+
+              {dropdownOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg z-50 text-sm overflow-hidden ring-1 ring-gray-200">
+                  <div className="px-4 py-3 bg-gray-50">
+                    <p className="font-semibold flex items-center gap-2 text-blue-700">
+                      <FiUser /> {user.name}
+                    </p>
+                    <p className="text-gray-600 flex items-center gap-2 mt-1">
+                      <FiShield /> {roleLabel}
+                    </p>
+                    {user.role !== 'admin' && (
+                      <p className="text-gray-600 flex items-center gap-2 mt-1">
+                        <FiHome /> Firma: {user.client_name || 'Bilinmiyor'}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-col divide-y divide-gray-100">
+                    <button
+                      onClick={() => navigate(`/profile/${user.id}`)}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-100 flex items-center gap-2"
+                    >
+                      <FiInfo /> Profilim
+                    </button>
+                    <button
+                      onClick={() => navigate('/settings')}
+                      className="w-full text-left px-4 py-3 hover:bg-gray-100 flex items-center gap-2"
+                    >
+                      <FiSettings /> Ayarlar
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-3 text-red-600 hover:bg-gray-100 flex items-center gap-2"
+                    >
+                      <FiLogOut /> Çıkış Yap
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Modal: Show All Notifications */}
       {showAll && (
         <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center">
           <div ref={modalRef} className="bg-white w-[90vw] max-w-4xl max-h-[80vh] rounded-2xl shadow-2xl p-0 overflow-y-auto">
-            <h2 className="text-lg font-semibold text-blue-700 px-6 py-4 border-b border-gray-200 text-center sticky top-0 bg-white z-10">Tüm Bildirimler</h2>
+            <h2 className="text-lg font-semibold text-blue-700 px-6 py-4 border-b border-gray-200 text-center sticky top-0 bg-white z-10">
+              Tüm Bildirimler
+            </h2>
             <ul className="w-full">
               {notifications.map((note, idx) => (
                 <li
@@ -249,8 +292,10 @@ const TopBar = ({ hideNotifications = false }) => {
                   className={`w-full text-sm text-gray-700 px-6 py-4 ${idx % 2 === 0 ? 'bg-gray-50' : 'bg-gray-100'}`}
                 >
                   <div className="flex justify-between items-center">
-                    <div className="font-medium">{note.message}</div>
-                    <div className="text-xs text-gray-500 whitespace-nowrap">{new Date(note.created_at).toLocaleString('tr-TR')}</div>
+                    <div className="font-medium">{note.device_name} ({note.device_id}) : {note.message}</div>
+                    <div className="text-xs text-gray-500 whitespace-nowrap">
+                      {new Date(note.created_at).toLocaleString('tr-TR')}
+                    </div>
                   </div>
                 </li>
               ))}

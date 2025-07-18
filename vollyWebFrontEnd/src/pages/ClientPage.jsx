@@ -38,19 +38,19 @@ export default function ClientPage() {
       <div className="p-6 space-y-6">
 
         {/* Search, Filter, and Button on the Same Line */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
-          <div className="flex gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
             <input
               type="text"
               placeholder="İsim Ara..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="border border-gray-300 px-3 py-2 rounded-md text-sm w-120"
+              className="border border-gray-300 px-3 py-2 rounded-md text-sm w-full sm:w-64 hover:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600"
             />
             <select
               value={selectedCompanyCode}
               onChange={(e) => setSelectedCompanyCode(e.target.value)}
-              className="border border-gray-300 px-3 py-2 rounded-md text-sm w-40"
+              className="border border-gray-300 px-3 py-2 rounded-md text-sm w-full sm:w-48 hover:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600"
             >
               <option value="">Tüm Firma Kodları</option>
               {uniqueCompanyCodes.map(code => (
@@ -58,13 +58,15 @@ export default function ClientPage() {
               ))}
             </select>
           </div>
+          <div className="w-full sm:w-auto sm:ml-auto">
+            <button
 
-          <button
-            onClick={() => setShowModal(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
-          >
-            Yeni Müşteri Ekle
-          </button>
+              onClick={() => setShowModal(true)}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm w-full sm:w-auto"
+            >
+              Yeni Müşteri Ekle
+            </button>
+          </div>
         </div>
 
 

@@ -15,7 +15,6 @@ router.get('/', authenticateToken, async (req, res) => {
     const deviceIds = result.rows.map(row => row.device_id);
     res.json({ device_ids: deviceIds });
   } catch (err) {
-    console.error('Error fetching notification preferences:', err);
     res.status(500).json({ error: 'Sunucu hatası' });
   }
 });
@@ -48,7 +47,6 @@ router.post('/', authenticateToken, async (req, res) => {
     res.json({ message: 'Tercihler başarıyla güncellendi' });
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('Error updating notification preferences:', err);
     res.status(500).json({ error: 'Sunucu hatası' });
   } finally {
     client.release();

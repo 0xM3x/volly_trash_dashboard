@@ -36,7 +36,6 @@ router.post('/', authenticateToken, async (req, res) => {
 
     res.status(201).json(insert.rows[0]);
   } catch (err) {
-    console.error('Client creation error:', err);
     res.status(500).json({ message: 'Sunucu hatası' });
   }
 });
@@ -51,7 +50,6 @@ router.get('/', authenticateToken, async (req, res) => {
     const result = await pool.query(`SELECT id, name, company_id, created_at FROM clients ORDER BY created_at DESC`);
     res.json({ clients: result.rows });
   } catch (err) {
-    console.error('Client list error:', err);
     res.status(500).json({ message: 'Sunucu hatası' });
   }
 });
@@ -74,7 +72,6 @@ router.get('/:id', authenticateToken, async (req, res) => {
     }
     res.json(result.rows[0]);
   } catch (err) {
-    console.error('Firma alma hatası:', err);
     res.status(500).json({ message: 'Sunucu hatası' });
   }
 });
@@ -99,7 +96,6 @@ router.put('/:id', authenticateToken, async (req, res) => {
     await pool.query('UPDATE clients SET name = $1 WHERE id = $2', [name, id]);
     res.json({ message: 'Firma adı güncellendi' });
   } catch (err) {
-    console.error('Firma güncelleme hatası:', err);
     res.status(500).json({ message: 'Sunucu hatası' });
   }
 });

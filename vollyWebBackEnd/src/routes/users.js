@@ -34,7 +34,6 @@ router.post('/', authenticateToken, async (req, res) => {
 
     res.status(201).json({ user: result.rows[0] });
   } catch (err) {
-    console.error('User registration error:', err);
 
     const allowedRoles = ['admin', 'client_admin', 'client_user'];
     if (!allowedRoles.includes(role)) {
@@ -52,21 +51,6 @@ router.post('/', authenticateToken, async (req, res) => {
     res.status(500).json({ message: 'Sunucu hatası' });
   }
 });
-
-// // GET /api/users - List all users (admin only)
-// router.get('/', authenticateToken, async (req, res) => {
-//   if (req.user.role !== 'admin') {
-//     return res.status(403).json({ message: 'Erişim reddedildi' });
-//   }
-
-//   try {
-//     const result = await pool.query('SELECT id, name, email, role FROM users ORDER BY id ASC');
-//     res.json({ users: result.rows });
-//   } catch (err) {
-//     console.error('Kullanıcıları alma hatası:', err);
-//     res.status(500).json({ message: 'Sunucu hatası' });
-//   }
-// });
 
 router.get('/', authenticateToken, async (req, res) => {
   try {
@@ -87,7 +71,6 @@ router.get('/', authenticateToken, async (req, res) => {
 
     return res.status(403).json({ message: 'Erişim reddedildi' });
   } catch (err) {
-    console.error('Kullanıcıları alma hatası:', err);
     res.status(500).json({ message: 'Sunucu hatası' });
   }
 });
@@ -108,29 +91,6 @@ router.get('/me', authenticateToken, async (req, res) => {
   }
 });
 
-// PUT /api/users/:id/role - Update user role (admin only)
-// router.put('/:id/role', authenticateToken, async (req, res) => {
-//   if (req.user.role !== 'admin') {
-//     return res.status(403).json({ message: 'Erişim reddedildi' });
-//   }
-
-//   const { id } = req.params;
-//   const { role } = req.body;
-
-//   const allowedRoles = ['admin', 'client_admin', 'client_user'];
-//   if (!allowedRoles.includes(role)) {
-//     return res.status(400).json({ message: 'Geçersiz rol' });
-//   }
-
-//   try {
-//     await pool.query('UPDATE users SET role = $1 WHERE id = $2', [role, id]);
-//     res.json({ message: 'Rol başarıyla güncellendi' });
-//   } catch (err) {
-//     console.error('Rol güncelleme hatası:', err);
-//     res.status(500).json({ message: 'Sunucu hatası' });
-//   }
-// });
-
 // GET /api/users/by-client - List users for the same client (client_admin only)
 router.get('/by-client', authenticateToken, async (req, res) => {
   if (req.user.role !== 'client_admin') {
@@ -144,7 +104,6 @@ router.get('/by-client', authenticateToken, async (req, res) => {
     );
     res.json({ users: result.rows });
   } catch (err) {
-    console.error('Client kullanıcılarını alma hatası:', err);
     res.status(500).json({ message: 'Sunucu hatası' });
   }
 });
@@ -178,7 +137,6 @@ router.put('/:id/role', authenticateToken, async (req, res) => {
 
     return res.status(403).json({ message: 'Erişim reddedildi' });
   } catch (err) {
-    console.error('Rol güncelleme hatası:', err);
     res.status(500).json({ message: 'Sunucu hatası' });
   }
 });
@@ -208,7 +166,6 @@ router.put('/change-password', authenticateToken, async (req, res) => {
 
     res.json({ message: 'Şifre başarıyla güncellendi' });
   } catch (err) {
-    console.error('Şifre güncelleme hatası:', err);
     res.status(500).json({ message: 'Sunucu hatası' });
   }
 });

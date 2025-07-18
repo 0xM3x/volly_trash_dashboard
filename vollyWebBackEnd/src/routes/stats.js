@@ -7,7 +7,6 @@ const authenticateToken = require('../middleware/authMiddleware');
 router.get('/summary', authenticateToken, async (req, res) => {
   try {
     const { role, client_id } = req.user;
-    console.log('[SUMMARY] Authenticated user:', req.user);
 
     let baseQuery = 'SELECT status, COUNT(*) FROM devices';
     const params = [];
@@ -37,7 +36,6 @@ router.get('/summary', authenticateToken, async (req, res) => {
 
     res.json(summary);
   } catch (err) {
-    console.error('Summary stats error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -61,7 +59,6 @@ router.get('/fill-graph', authenticateToken, async (req, res) => {
       allowedIds.push(d.id);
     });
 
-    console.log('[FILL-GRAPH] Allowed device IDs:', allowedIds);
 
     if (allowedIds.length === 0) {
       return res.json({ days: [], counts: [], mostFilled: null, leastFilled: null });
@@ -110,7 +107,6 @@ router.get('/fill-graph', authenticateToken, async (req, res) => {
       },
     });
   } catch (err) {
-    console.error('Fill graph stats error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -130,7 +126,6 @@ router.get('/latest-status', authenticateToken, async (req, res) => {
       deviceMap[d.id] = { unique_id: d.unique_id, name: d.name };
       allowedIds.push(d.id);
     });
-    console.log('[LATEST-STATUS] Allowed device IDs:', allowedIds);
 
     if (allowedIds.length === 0) return res.json([]);
 
@@ -142,7 +137,6 @@ router.get('/latest-status', authenticateToken, async (req, res) => {
       [allowedIds]
     );
 
-    console.log('[LATEST-STATUS] Queried logs:', logs.rows);
 
     const enriched = logs.rows
       .filter(log => deviceMap[log.device_id])
@@ -155,7 +149,6 @@ router.get('/latest-status', authenticateToken, async (req, res) => {
 
     res.json(enriched);
   } catch (err) {
-    console.error('Latest status stats error:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

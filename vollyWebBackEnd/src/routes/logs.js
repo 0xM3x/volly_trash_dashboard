@@ -27,7 +27,6 @@ router.get('/:deviceId', async (req, res) => {
 
     res.json(result.rows);
   } catch (err) {
-    console.error('Failed to fetch logs by date:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -57,7 +56,6 @@ router.get('/:deviceId/range', async (req, res) => {
 
     res.json(result.rows);
   } catch (err) {
-    console.error('Failed to fetch logs in range:', err);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

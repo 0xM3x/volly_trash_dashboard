@@ -38,7 +38,6 @@ export default function RouteMapPage() {
     setUser(storedUser);
     if (storedUser?.id) {
       socket.emit('register', storedUser.id.toString());
-      console.log('[📡] Registered user for socket notifications:', storedUser.id);
     }
   }, []);
 
@@ -132,7 +131,6 @@ export default function RouteMapPage() {
     socket.on('notification', (data) => {
       if (data.unique_id && ['full', 'empty'].includes(data.type)) {
         updateMarkers(true);
-        console.log('[📥] Notification received (will update markers and route):', data);
       }
     });
 

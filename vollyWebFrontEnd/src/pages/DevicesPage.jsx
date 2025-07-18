@@ -32,13 +32,16 @@ export default function DevicePage() {
   const [showModal, setShowModal] = useState(false);
   const [newDevice, setNewDevice] = useState({ name: '', board_mac: '', client_id: '', latitude: '', longitude: '' });
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
   const fetchDevices = () => {
+    setLoading(true);
     axios.get('/devices')
       .then(res => {
         setDevices(res.data.devices);
       })
-      .catch(() => toast.error('Cihazlar yüklenemedi.'));
+      .catch(() => toast.error('Cihazlar yüklenemedi.'))
+      .finally(() => setLoading(false));
   };
 
   const fetchUserRole = () => {
@@ -151,7 +154,7 @@ export default function DevicePage() {
         )}
 
         <Transition appear show={showModal} as={Fragment}>
-          <Dialog as="div" className="relative z-50" onClose={() => setShowModal(false)}>
+          <Dialog as="div" className="relative z-[90]" onClose={() => setShowModal(false)}>
             <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
             <div className="fixed inset-0 flex items-center justify-center p-4">
               <Transition.Child
@@ -194,7 +197,7 @@ export default function DevicePage() {
                     </select>
 
                     <div className="h-64">
-                      <MapContainer center={[41.015, 28.979]} zoom={13} scrollWheelZoom={true} className="h-full w-full rounded">
+                      <MapContainer center={[39.9208, 32.8541]} zoom={6} scrollWheelZoom={true} className="h-full w-full rounded">
                         <TileLayer
                           attribution='&copy; OpenStreetMap contributors'
                           url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'

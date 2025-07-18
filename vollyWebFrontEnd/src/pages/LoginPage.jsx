@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import logo from '../assets/vollylogo.png';
 import axios from '../utils/axiosInstance';
+import ForgotPasswordModal from '../components/ForgotPasswordModal';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [showForgotModal, setShowForgotModal] = useState(false);
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -63,7 +66,16 @@ export default function LoginPage() {
           )}
 
           <div className="text-right text-sm">
-            <a href="#" className="text-blue-500 hover:underline">Şifremi Unuttum?</a>
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                setShowForgotModal(true);
+              }}
+              className="text-blue-500 hover:underline"
+            >
+              Şifremi Unuttum?
+            </a>
           </div>
 
           <button
@@ -73,6 +85,9 @@ export default function LoginPage() {
             Giriş Yap
           </button>
         </form>
+        {showForgotModal && (
+          <ForgotPasswordModal onClose={() => setShowForgotModal(false)} />
+        )}
       </div>
     </div>
   );

@@ -95,12 +95,14 @@ function setupMQTT(io) {
           `, [user.id, finalMessage, dbDeviceId]);
 
           io.to(user.id.toString()).emit('notification', {
+            user_id: user.id, // ✅ needed for frontend matching
             message: finalMessage,
+            device_id: dbDeviceId,
+            device_name: name,
             type: event,
             unique_id,
             client_id: clientId,
-            name,
-            created_at: new Date(),
+            created_at: new Date().toISOString(),
           });
         }
 

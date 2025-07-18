@@ -10,7 +10,6 @@ const socket = io('http://localhost:8000', {
 socket.on('connect', () => {
   if (user?.id) {
     socket.emit('register', user.id);
-    console.log('✅ User registered via socket:', user.id);
   }
 });
 

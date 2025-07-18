@@ -21,7 +21,6 @@ router.get('/', authenticateToken, async (req, res) => {
     const result = await pool.query(query, params);
     res.json({ devices: result.rows });
   } catch (err) {
-    console.error('Device list error:', err);
     res.status(500).json({ message: 'Sunucu hatası' });
   }
 });
@@ -73,7 +72,6 @@ router.post('/', authenticateToken, async (req, res) => {
 
     res.status(201).json({ device: result.rows[0] });
   } catch (err) {
-    console.error('Device registration error:', err);
     res.status(500).json({ message: 'Sunucu hatası' });
   }
 });
@@ -96,7 +94,6 @@ router.get('/map', authenticateToken, async (req, res) => {
     const result = await pool.query(query, params);
     res.json({ devices: result.rows });
   } catch (err) {
-    console.error('Map devices fetch error:', err);
     res.status(500).json({ message: 'Sunucu hatası' });
   }
 });
@@ -156,7 +153,6 @@ router.post('/route', authenticateToken, async (req, res) => {
       devices: result.rows,
     });
   } catch (err) {
-    console.error('Route optimization error:', err.message);
     res.status(500).json({ message: 'Rota oluşturulurken hata oluştu' });
   }
 });
@@ -181,7 +177,6 @@ router.get('/:id', async (req, res) => {
 
     res.json(device);
   } catch (error) {
-    console.error('Error fetching device:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

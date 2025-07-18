@@ -13,7 +13,6 @@ export default function DateSelector({ selectedDate, setSelectedDate }) {
         onSelect={(date) => {
           if (!date) return;
           setSelectedDate(date);
-          console.log('Seçilen tarih:', date.toLocaleDateString('tr-TR'));
         }}
         locale={tr}
         styles={{

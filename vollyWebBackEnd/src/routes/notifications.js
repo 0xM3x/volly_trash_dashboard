@@ -10,12 +10,15 @@ router.get('/', authenticateToken, async (req, res) => {
   try {
     const { id } = req.user;
     const result = await pool.query(
-      'SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC',
+      `SELECT notifications.*, devices.name AS device_name, devices.unique_id
+       FROM notifications
+       LEFT JOIN devices ON devices.id = notifications.device_id
+       WHERE notifications.user_id = $1
+       ORDER BY notifications.created_at DESC`,
       [id]
     );
     res.json(result.rows);
   } catch (err) {
-    console.error('Error fetching notifications:', err);
     res.status(500).json({ error: 'Sunucu hatası' });
   }
 });
@@ -42,7 +45,6 @@ router.get('/devices', authenticateToken, async (req, res) => {
     const result = await pool.query(deviceQuery, params);
     res.json(result.rows);
   } catch (err) {
-    console.error('Error fetching devices for notification preferences:', err);
     res.status(500).json({ error: 'Sunucu hatası' });
   }
 });
@@ -57,7 +59,6 @@ router.post('/mark-read', authenticateToken, async (req, res) => {
     );
     res.json({ message: 'Bildirimler okundu olarak işaretlendi' });
   } catch (err) {
-    console.error('Error updating notifications:', err);
     res.status(500).json({ error: 'Sunucu hatası' });
   }
 });
@@ -105,6 +106,13 @@ router.post('/send-to-device-users', async (req, res) => {
       );
     }
 
+    const deviceDetails = await pool.query(
+      'SELECT id, name FROM devices WHERE unique_id = $1',
+      [device_id]
+    );
+
+    const { id: dbDeviceId, name: device_name } = deviceDetails.rows[0];
+
     if (req.app.get('io')) {
       allRecipients.forEach(user => {
         req.app.get('io').to(user.id.toString()).emit('notification', {
@@ -112,13 +120,14 @@ router.post('/send-to-device-users', async (req, res) => {
           message,
           is_read: false,
           created_at: now.toISOString(),
+          device_id: dbDeviceId,
+          device_name,
         });
       });
     }
 
     res.status(201).json({ message: `${allRecipients.length} kullanıcıya bildirim gönderildi` });
   } catch (err) {
-    console.error('Bildirim gönderme hatası:', err);
     res.status(500).json({ error: 'Sunucu hatası' });
   }
 });

@@ -18,6 +18,14 @@ export default function ProfilePage() {
     .catch(() => setError('bilgileri alınamadı.'));
   }, []);
 
+  const getInitials = (name) => {
+    if (!name) return 'K';
+    return name
+      .split(' ')
+      .map((part) => part[0].toUpperCase())
+      .join('')
+      .slice(0, 2);
+  };
 
   const handlePasswordChange = () => {
     if (newPassword !== confirmNewPassword) {
@@ -51,15 +59,17 @@ export default function ProfilePage() {
     <Layout>
       <div className="p-6 space-y-6">
 
-        <div className="bg-white rounded-2xl shadow-md p-6 flex flex-col md:flex-row items-center md:items-start gap-8">
+        <div className="bg-white rounded-2xl shadow-md p-4 sm:p-6 flex flex-col md:flex-row items-center md:items-center gap-6 md:gap-8">
           {/* Avatar */}
-					<div className="w-full md:w-[200px] flex justify-center items-center">
-					  <FaUserCircle className="text-gray-400 text-[100px]" />
-					</div>
+          <div className="w-full md:w-[200px] flex justify-center md:justify-start md:items-start">
+            <div className="bg-blue-600 text-white text-[50px] font-bold w-[100px] h-[100px] flex items-center justify-center rounded-full">
+              {getInitials(userInfo.name)}
+            </div>
+          </div>
 
           {/* User Info */}
           <div className="flex-1 text-sm text-gray-800">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-8 w-full">
               <div className="font-medium">Ad Soyad:</div>
               <div>{userInfo.name}</div>
 
@@ -87,7 +97,7 @@ export default function ProfilePage() {
             <div className="mt-6">
               <button 
                 onClick={() => setShowModal(true)}
-                className="bg-blue-600 text-white text-sm px-4 py-2 rounded hover:bg-blue-700"
+                className="bg-blue-600 text-white text-sm px-4 py-2 rounded-lg hover:bg-blue-700 w-full sm:w-auto"
               >
                 Şifreyi Güncelle
               </button>

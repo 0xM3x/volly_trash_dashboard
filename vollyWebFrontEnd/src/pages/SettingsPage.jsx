@@ -16,6 +16,7 @@ export default function SettingsPage() {
   const [devices, setDevices] = useState([]);
   const [selectedDevices, setSelectedDevices] = useState([]);
   const [loadingSave, setLoadingSave] = useState(false);
+  const [loadingNotifications, setLoadingNotifications] = useState(true);
   const [notifications, setNotifications] = useState([]);
 
   const tabs = role === 'client_user'
@@ -62,9 +63,11 @@ export default function SettingsPage() {
         .then(res => setSelectedDevices(res.data.device_ids))
         .catch(err => console.warn('Tercihler alınamadı', err));
 
+      setLoadingNotifications(true);
       axios.get('/notifications')
         .then(res => setNotifications(res.data))
-        .catch(err => console.warn('Bildirimler alınamadı', err));
+        .catch(err => console.warn('Bildirimler alınamadı', err))
+        .finally(() => setLoadingNotifications(false));
     }
   }, [activeTab]);
 
@@ -193,48 +196,36 @@ export default function SettingsPage() {
 
           {role !== 'client_user' && activeTab === 'Bildirimler' && (
             <div className="space-y-6 text-sm">
-              <div className="space-y-4">
-                <p className="text-gray-700">Bildirimi almak istediğiniz cihazları aşağıdan seçebilirsiniz.</p>
+              <div className="pt-2">
+                <h2 className="text-base font-semibold mb-3">Tüm Bildirimler</h2>
 
-                {devices.length === 0 ? (
-                  <p className="text-gray-400 italic">Yükleniyor...</p>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {devices.map(device => (
-                      <label key={device.unique_id} className="flex items-center gap-2 p-2 border rounded">
-                        <input
-                          type="checkbox"
-                          checked={selectedDevices.includes(device.unique_id)}
-                          onChange={() => toggleDevice(device.unique_id)}
-                          className="accent-blue-600"
-                        />
-                        <span>{device.name}</span>
-                      </label>
-                    ))}
+                {loadingNotifications ? (
+                  <div className="flex justify-center py-4">
+                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-blue-500" />
                   </div>
+                ) : notifications.length === 0 ? (
+                  <p className="text-gray-500 italic">Bildirim yok.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {notifications
+                      .filter(n => n.user_id === user.id) // 👈 Optional filter by current user
+                      .map(n => (
+                        <li
+                          key={n.id}
+                          className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow transition"
+                        >
+                          <p className="text-gray-800 font-medium">🔔 {n.message}</p>
+                          <p className="text-gray-600 text-sm mt-1">
+                            Cihaz: <span className="font-semibold">{n.device_name || 'Bilinmiyor'}</span> 
+                          </p>
+                          <p className="text-gray-600 text-xs mt-1">
+                            ID: <span className="font-mono text-gray-500">{n.unique_id || 'ID YOK'}</span>
+                          </p>
+                          <p className="text-gray-500 text-xs mt-1">{formatDate(n.created_at)}</p>
+                        </li>
+                      ))}
+                  </ul>
                 )}
-
-                <div className="pt-4">
-                  <button
-                    onClick={handleSavePreferences}
-                    className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded"
-                    disabled={loadingSave}
-                  >
-                    {loadingSave ? 'Kaydediliyor...' : 'Tercihleri Kaydet'}
-                  </button>
-                </div>
-              </div>
-
-              <div className="pt-6">
-                <h2 className="text-base font-semibold mb-2">Tüm Bildirimler</h2>
-                <ul className="divide-y text-sm">
-                  {notifications.map(n => (
-                    <li key={n.id} className="py-2">
-                      <p className="text-gray-800">{n.message}</p>
-                      <p className="text-gray-500 text-xs">{formatDate(n.created_at)}</p>
-                    </li>
-                  ))}
-                </ul>
               </div>
             </div>
           )}
@@ -244,13 +235,13 @@ export default function SettingsPage() {
               {users
                 .filter(u => role === 'admin' || u.client_id === user.client_id)
                 .map(u => (
-                  <div key={u.id} className="border border-gray-200 rounded-lg p-4">
+                  <div key={u.id} className="rounded-xl shadow-sm border border-gray-300 bg-white p-4 hover:shadow-md transition">
                     <p className="font-medium">{u.name} ({u.email})</p>
                     <div className="flex flex-col sm:flex-row sm:items-center gap-2 mt-2">
                       <select
                         value={editedRoles[u.id]?.role || u.role}
                         onChange={e => handleRoleChange(u.id, e.target.value, editedRoles[u.id]?.client_id || u.client_id)}
-                        className="border rounded px-2 py-1"
+                        className="border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition text-sm"
                       >
                         {role === 'admin' && (
                           <>
@@ -271,7 +262,7 @@ export default function SettingsPage() {
                         <select
                           value={editedRoles[u.id]?.client_id || u.client_id || ''}
                           onChange={e => handleRoleChange(u.id, editedRoles[u.id]?.role || u.role, e.target.value)}
-                          className="border rounded px-2 py-1"
+                          className="border border-gray-300 rounded-md px-3 py-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 transition text-sm"
                         >
                           <option value="">Firma Yok</option>
                           {clientList.map(c => (

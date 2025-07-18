@@ -63,7 +63,7 @@ export default function AddClientModal({ isOpen, onClose, onAdd }) {
 
   return (
     <div className="fixed inset-0 bg-gray-800/40 z-50 flex items-center justify-center px-4 overflow-auto">
-      <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-4xl space-y-6">
+      <div className="bg-white p-6 rounded-xl shadow-lg w-full max-w-4xl space-y-6 max-h-[90vh] overflow-y-auto">
         <h3 className="text-lg font-bold text-blue-600">Yeni Müşteri Ekle</h3>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -71,7 +71,7 @@ export default function AddClientModal({ isOpen, onClose, onAdd }) {
             <label className="block text-sm text-gray-600 mb-1">Firma Adı</label>
             <input
               type="text"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={clientName}
               onChange={(e) => setClientName(e.target.value)}
               required
@@ -89,7 +89,7 @@ export default function AddClientModal({ isOpen, onClose, onAdd }) {
                       placeholder="Ad Soyad"
                       value={user.name}
                       onChange={(e) => handleUserChange(index, 'name', e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      className="px-3 py-2 border border-gray-300 rounded-md text-sm hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     />
                     <input
@@ -97,7 +97,7 @@ export default function AddClientModal({ isOpen, onClose, onAdd }) {
                       placeholder="E-posta"
                       value={user.email}
                       onChange={(e) => handleUserChange(index, 'email', e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      className="px-3 py-2 border border-gray-300 rounded-md text-sm hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     />
                     <input
@@ -105,13 +105,13 @@ export default function AddClientModal({ isOpen, onClose, onAdd }) {
                       placeholder="Şifre"
                       value={user.password}
                       onChange={(e) => handleUserChange(index, 'password', e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      className="px-3 py-2 border border-gray-300 rounded-md text-sm hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       required
                     />
                     <select
                       value={user.role}
                       onChange={(e) => handleUserChange(index, 'role', e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                      className="px-3 py-2 border border-gray-300 rounded-md text-sm hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="client_admin">Müşteri Yöneticisi</option>
                       <option value="client_user">Kullanıcı</option>
